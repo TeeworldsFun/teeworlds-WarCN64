@@ -21,6 +21,10 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_SpectatorID = SPEC_FREEVIEW;
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
+	
+	m_CaughtBy = -1;
+	
+	muted = 0;
 }
 
 CPlayer::~CPlayer()
@@ -36,9 +40,44 @@ void CPlayer::Tick()
 #endif
 	if(!Server()->ClientIngame(m_ClientID))
 		return;
+		
+	if(muted > 0 && Server()->Tick()%Server()->TickSpeed() == 0)
+	{
+		muted--;
+		
+		if(muted == 0)
+		{
+			char buf[64];
+			str_format(buf, 63, "'%s' isn't muted anymore!'", Server()->ClientName(m_ClientID));
+			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, buf);
+		}
+	}
 
 	Server()->SetClientScore(m_ClientID, m_Score);
-
+	
+	if(GameServer()->m_ModNum == CGameContext::MOD_ZCATCH)
+	{
+		int num = 0;
+		int num_inactive = 0;
+		
+		for(int i=0; i<MAX_CLIENTS; i++)
+		{
+			if(GameServer()->m_apPlayers[i])
+			{
+				num++;
+				if(GameServer()->m_apPlayers[i]->GetTeam() == -1)
+					num_inactive++;
+			}
+		}
+		
+		if(num == 1)
+		{
+		
+		}
+		else if(num != 0 && num - num_inactive < 2)
+			GameServer()->m_pController->EndRound();
+	}
+	
 	// do latency stuff
 	{
 		IServer::CClientInfo Info;
@@ -142,6 +181,19 @@ void CPlayer::Snap(int SnappingClient)
 		pSpectatorInfo->m_X = m_ViewPos.x;
 		pSpectatorInfo->m_Y = m_ViewPos.y;
 	}
+	
+	if(GameServer()->m_ModNum == CGameContext::MOD_ZCATCH && GameServer()->m_apPlayers[m_ClientID])
+	{
+		int num = 161;
+		
+		for(int i=0;i<MAX_CLIENTS;i++)
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CaughtBy == m_ClientID)
+				num -= 10;
+				
+		pClientInfo->m_ColorBody = num * 0x010000 + 0xff00;
+		pClientInfo->m_ColorFeet = num * 0x010000 + 0xff00;
+		pClientInfo->m_UseCustomColor = 1;
+	}
 }
 
 void CPlayer::OnDisconnect(const char *pReason)
@@ -232,6 +284,19 @@ void CPlayer::Respawn()
 
 void CPlayer::SetTeam(int Team)
 {
+	if(GameServer()->m_ModNum == CGameContext::MOD_ZCATCH && Team != -1)
+	{
+		if(m_CaughtBy != -1)
+		{
+			char buf[128];
+		
+			str_format(buf, 127, "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(m_CaughtBy), Server()->ClientName(m_CaughtBy));
+			GameServer()->SendChatTarget(m_ClientID, buf);
+			
+			return;
+		}
+	}
+
 	// clamp the team
 	Team = GameServer()->m_pController->ClampTeam(Team);
 	if(m_Team == Team)
@@ -274,4 +339,32 @@ void CPlayer::TryRespawn()
 	m_pCharacter = new(m_ClientID) CCharacter(&GameServer()->m_World);
 	m_pCharacter->Spawn(this, SpawnPos);
 	GameServer()->CreatePlayerSpawn(SpawnPos);
+}
+
+void CPlayer::SetTeamDirect(int Team)
+{
+	// clamp the team
+	Team = GameServer()->m_pController->ClampTeam(Team);
+	if(m_Team == Team)
+		return;
+		
+
+	//KillCharacter();
+
+	m_Team = Team;
+	m_LastActionTick = Server()->Tick();
+	// we got to wait 0.5 secs before respawning
+	m_RespawnTick = Server()->Tick()+Server()->TickSpeed()/2;
+
+	GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[m_ClientID]);
+
+	if(Team == TEAM_SPECTATORS)
+	{
+		// update spectator modes
+		for(int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_SpectatorID == m_ClientID)
+				GameServer()->m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
+		}
+	}
 }

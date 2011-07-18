@@ -161,7 +161,7 @@ bool IGameController::OnEntity(int Index, vec2 Pos)
 		SubType = WEAPON_NINJA;
 	}
 
-	if(Type != -1)
+	if(Type != -1 && (str_comp(g_Config.m_SvGametype, "idm") != 0) && (str_comp(g_Config.m_SvGametype, "itdm") != 0) && (str_comp(g_Config.m_SvGametype, "ictf") != 0) && (str_comp(g_Config.m_SvGametype, "zcatch") != 0 && (str_comp(g_Config.m_SvGametype, "gdm") != 0) && (str_comp(g_Config.m_SvGametype, "gtdm") != 0)) /*This should be solved on a faster way*/)
 	{
 		CPickup *pPickup = new CPickup(&GameServer()->m_World, Type, SubType);
 		pPickup->m_Pos = Pos;
@@ -175,6 +175,18 @@ void IGameController::EndRound()
 {
 	if(m_Warmup) // game can't end when we are running warmup
 		return;
+		
+	if(GameServer()->m_ModNum == CGameContext::MOD_ZCATCH)
+	{
+		for(int i=0;i<MAX_CLIENTS;i++)
+		{
+			if(GameServer()->m_apPlayers[i])
+			{
+				GameServer()->m_apPlayers[i]->m_CaughtBy = -1;
+				GameServer()->m_apPlayers[i]->SetTeamDirect(GetAutoTeam(i));
+			}
+		}
+	}
 
 	GameServer()->m_World.m_Paused = true;
 	m_GameOverTick = Server()->Tick();

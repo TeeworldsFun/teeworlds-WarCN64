@@ -55,6 +55,9 @@ MACRO_CONFIG_INT(UiColorAlpha, ui_color_alpha, 228, 0, 255, CFGFLAG_CLIENT|CFGFL
 MACRO_CONFIG_INT(GfxNoclip, gfx_noclip, 0, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Disable clipping")
 
 // server
+MACRO_CONFIG_INT(SvWeaponType, sv_weapon_type, 1, 0, 6, CFGFLAG_SERVER, "1 = Rifle, 2 = Grenade, 3 = Gun, 4 = Hammer, 5 = Shotgun, 6 = Ninja")
+MACRO_CONFIG_INT(SvOnehitKill, sv_onehit_kill, 1, 0, 1, CFGFLAG_SERVER, "enable/disable onehit kill")
+
 MACRO_CONFIG_INT(SvWarmup, sv_warmup, 0, 0, 0, CFGFLAG_SERVER, "Number of seconds to do warmup before round starts")
 MACRO_CONFIG_STR(SvMotd, sv_motd, 900, "", CFGFLAG_SERVER, "Message of the day to display for the clients")
 MACRO_CONFIG_INT(SvTeamdamage, sv_teamdamage, 0, 0, 1, CFGFLAG_SERVER, "Team damage")

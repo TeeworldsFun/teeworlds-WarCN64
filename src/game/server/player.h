@@ -95,6 +95,12 @@ public:
 		int m_Min;
 		int m_Max;
 	} m_Latency;
+	
+	//for zcatch
+	int m_CaughtBy;
+	void SetTeamDirect(int Team);
+	
+	int muted; //muted in seconds
 
 private:
 	CCharacter *m_pCharacter;

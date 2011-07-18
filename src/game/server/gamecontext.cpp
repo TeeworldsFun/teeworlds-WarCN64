@@ -13,6 +13,10 @@
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"
+#include "gamemodes/idm.h"
+#include "gamemodes/itdm.h"
+#include "gamemodes/ictf.h"
+#include "gamemodes/zcatch.h"
 
 enum
 {
@@ -137,6 +141,7 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 			vec2 Diff = apEnts[i]->m_Pos - Pos;
 			vec2 ForceDir(0,1);
 			float l = length(Diff);
+			
 			if(l)
 				ForceDir = normalize(Diff);
 			l = 1-clamp((l-InnerRadius)/(Radius-InnerRadius), 0.0f, 1.0f);
@@ -422,7 +427,7 @@ void CGameContext::OnTick()
 				bool aVoteChecked[MAX_CLIENTS] = {0};
 				for(int i = 0; i < MAX_CLIENTS; i++)
 				{
-					if(!m_apPlayers[i] || m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS || aVoteChecked[i])	// don't count in votes by spectators
+					if(!m_apPlayers[i] || aVoteChecked[i])
 						continue;
 
 					int ActVote = m_apPlayers[i]->m_Vote;
@@ -521,9 +526,71 @@ void CGameContext::OnClientEnter(int ClientID)
 void CGameContext::OnClientConnected(int ClientID)
 {
 	// Check which team the player should be on
-	const int StartTeam = g_Config.m_SvTournamentMode ? TEAM_SPECTATORS : m_pController->GetAutoTeam(ClientID);
-
-	m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, StartTeam);
+	//const int StartTeam = g_Config.m_SvTournamentMode ? TEAM_SPECTATORS : m_pController->GetAutoTeam(ClientID);
+	
+	int StartTeam = -1;
+	int num = 0;
+	int leader_id;
+	int num_prev;
+	
+	if(g_Config.m_SvTournamentMode)
+	{
+		StartTeam = TEAM_SPECTATORS;
+		m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, m_pController->GetAutoTeam(ClientID));
+	}
+	else if(m_ModNum == MOD_ZCATCH)
+	{
+		m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, 1);
+	
+		for(int i=0;i<MAX_CLIENTS;i++)
+		{
+			if(m_apPlayers[i])
+				num++;
+		}
+		
+		if(num < 3)
+			m_pController->EndRound();
+			
+		leader_id = -1;
+		num_prev = 0;
+		
+		for(int i=0;i<MAX_CLIENTS;i++)
+		{
+			if(m_apPlayers[i])
+			{
+				num = 0;
+				
+				for(int j=0; j<MAX_CLIENTS; j++)
+		   		{
+				    if(m_apPlayers[j] && m_apPlayers[j]->m_CaughtBy == i)
+					    num++;
+		    	}
+		    	
+		    	if(num > num_prev)
+		    	{
+				    leader_id = i;
+				    num_prev = num;
+		    	}
+			}
+		}
+		
+		if(leader_id > -1)
+		{
+			char buf[128];
+			
+			m_apPlayers[ClientID]->m_CaughtBy = leader_id;
+			m_apPlayers[ClientID]->SetTeamDirect(-1);
+			str_format(buf, sizeof(buf), "You will join the game when %s dies", Server()->ClientName(leader_id));
+			SendChatTarget(ClientID, buf);
+		}
+		/*else
+			m_apPlayers[ClientID]->SetTeamDirect(m_pController->GetAutoTeam(ClientID));*/
+	}
+	else
+	{
+		StartTeam = m_pController->GetAutoTeam(ClientID);
+		m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, StartTeam);
+	}
 	//players[client_id].init(client_id);
 	//players[client_id].client_id = client_id;
 
@@ -600,8 +667,23 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				*pMessage = ' ';
 			pMessage++;
 		}
-
-		SendChat(ClientID, Team, pMsg->m_pMessage);
+		
+		if(pMsg->m_pMessage[0] == '/')
+		{
+			char buf[256];
+		
+			if(str_comp(pMsg->m_pMessage, "/info") == 0)
+			{
+				str_format(buf, 255, "modpack by east. release: %s", __DATE__);
+				SendChatTarget(ClientID, buf);
+				SendChatTarget(ClientID, "annoyingeast@googlemail.com");
+				SendChatTarget(ClientID, "zCatch color indicator by erd");				
+			}
+		}
+		else if(m_apPlayers[ClientID]->muted > 0)
+			SendChatTarget(ClientID, "You are muted!");
+		else
+			SendChat(ClientID, Team, pMsg->m_pMessage);
 	}
 	else if(MsgID == NETMSGTYPE_CL_CALLVOTE)
 	{
@@ -610,11 +692,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 		int64 Now = Server()->Tick();
 		pPlayer->m_LastVoteTry = Now;
-		if(pPlayer->GetTeam() == TEAM_SPECTATORS)
-		{
-			SendChatTarget(ClientID, "Spectators aren't allowed to start a vote.");
-			return;
-		}
 
 		if(m_VoteCloseTime)
 		{
@@ -1312,11 +1389,31 @@ void CGameContext::ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *p
 	}
 }
 
+void CGameContext::ConMute(IConsole::IResult *pResult, void *pUserData)
+{
+	char buf[64];
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	int ClientID = pResult->GetInteger(0);
+	int time = pResult->GetInteger(1);
+	
+	if(time < 0)
+		return;
+	
+	if(ClientID >= 0 && ClientID < MAX_CLIENTS && pSelf->m_apPlayers[ClientID])
+	{
+		pSelf->m_apPlayers[ClientID]->muted = time;
+		str_format(buf, 63, "'%s' is muted for %d seconds!", pSelf->Server()->ClientName(ClientID), time);
+		pSelf->SendChat(-1, CGameContext::CHAT_ALL, buf);
+	}	
+}
+
 void CGameContext::OnConsoleInit()
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
-
+	
+	Console()->Register("mute", "ii", CFGFLAG_SERVER, ConMute, this, "mute other players");
 	Console()->Register("tune", "si", CFGFLAG_SERVER, ConTuneParam, this, "Tune variable to value");
 	Console()->Register("tune_reset", "", CFGFLAG_SERVER, ConTuneReset, this, "Reset tuning");
 	Console()->Register("tune_dump", "", CFGFLAG_SERVER, ConTuneDump, this, "Dump tuning");
@@ -1364,6 +1461,14 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		m_pController = new CGameControllerCTF(this);
 	else if(str_comp(g_Config.m_SvGametype, "tdm") == 0)
 		m_pController = new CGameControllerTDM(this);
+	else if(str_comp(g_Config.m_SvGametype, "idm") == 0)
+		m_pController = new CGameControllerIDM(this);
+	else if(str_comp(g_Config.m_SvGametype, "itdm") == 0)
+		m_pController = new CGameControllerITDM(this);
+	else if(str_comp(g_Config.m_SvGametype, "ictf") == 0)
+		m_pController = new CGameControllerICTF(this);
+	else if(str_comp(g_Config.m_SvGametype, "zcatch") == 0)
+		m_pController = new CGameControllerZCATCH(this);
 	else
 		m_pController = new CGameControllerDM(this);
 
@@ -1409,6 +1514,22 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		}
 	}
 #endif
+
+	//set m_ModNum. is that the correct place todo that?
+	if(str_comp(g_Config.m_SvGametype, "dm") == 0)
+		m_ModNum = MOD_DM;
+	else if(str_comp(g_Config.m_SvGametype, "ctf") == 0)
+		m_ModNum = MOD_CTF;
+	else if(str_comp(g_Config.m_SvGametype, "tdm") == 0)
+		m_ModNum = MOD_TDM;
+	else if(str_comp(g_Config.m_SvGametype, "idm") == 0)
+		m_ModNum = MOD_IDM;
+	else if(str_comp(g_Config.m_SvGametype, "itdm") == 0)
+		m_ModNum = MOD_ITDM;
+	else if(str_comp(g_Config.m_SvGametype, "ictf") == 0)
+		m_ModNum = MOD_ICTF;
+	else if(str_comp(g_Config.m_SvGametype, "zcatch") == 0)
+		m_ModNum = MOD_ZCATCH;
 }
 
 void CGameContext::OnShutdown()

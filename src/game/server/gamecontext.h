@@ -60,6 +60,8 @@ class CGameContext : public IGameServer
 	static void ConClearVotes(IConsole::IResult *pResult, void *pUserData);
 	static void ConVote(IConsole::IResult *pResult, void *pUserData);
 	static void ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	
+	static void ConMute(IConsole::IResult *pResult, void *pUserData);
 
 	CGameContext(int Resetting);
 	void Construct(int Resetting);
@@ -165,6 +167,20 @@ public:
 	virtual const char *GameType();
 	virtual const char *Version();
 	virtual const char *NetVersion();
+	
+	enum
+	{
+		//gametypes
+		MOD_DM=0,
+		MOD_CTF,
+		MOD_TDM,
+		MOD_IDM,
+		MOD_ITDM,
+		MOD_ICTF,
+		MOD_ZCATCH,
+	};
+	
+	int m_ModNum; //all gametypes are marked with a number
 };
 
 inline int CmaskAll() { return -1; }

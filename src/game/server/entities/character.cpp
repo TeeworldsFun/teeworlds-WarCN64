@@ -56,8 +56,46 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 {
 	m_EmoteStop = -1;
 	m_LastAction = -1;
-	m_ActiveWeapon = WEAPON_GUN;
-	m_LastWeapon = WEAPON_HAMMER;
+	
+	if(GameServer()->m_ModNum >= CGameContext::MOD_IDM && GameServer()->m_ModNum <= CGameContext::MOD_ZCATCH)
+	{
+		if(g_Config.m_SvWeaponType == 2)
+		{
+			m_ActiveWeapon = WEAPON_GRENADE;
+			m_LastWeapon = WEAPON_HAMMER;
+        }
+		else if(g_Config.m_SvWeaponType == 3)
+		{
+			m_ActiveWeapon = WEAPON_GUN;
+			m_LastWeapon = WEAPON_HAMMER;
+        }
+		else if(g_Config.m_SvWeaponType == 4)
+		{
+			m_ActiveWeapon = WEAPON_HAMMER;
+			m_LastWeapon = WEAPON_GUN;
+        }
+        else if(g_Config.m_SvWeaponType == 5)
+        {
+        	m_ActiveWeapon = WEAPON_SHOTGUN;
+			m_LastWeapon = WEAPON_HAMMER;
+        }
+        else if(g_Config.m_SvWeaponType == 6)
+        {
+        	m_ActiveWeapon = WEAPON_NINJA;
+			m_LastWeapon = WEAPON_HAMMER;
+        }
+		else
+		{
+			m_ActiveWeapon = WEAPON_RIFLE;
+			m_LastWeapon = WEAPON_HAMMER;
+		}
+	}
+	else
+	{
+		m_ActiveWeapon = WEAPON_GUN;
+		m_LastWeapon = WEAPON_HAMMER;
+	}
+	
 	m_QueuedWeapon = -1;
 
 	m_pPlayer = pPlayer;
@@ -88,6 +126,9 @@ void CCharacter::Destroy()
 
 void CCharacter::SetWeapon(int W)
 {
+	if((GameServer()->m_ModNum >= CGameContext::MOD_IDM && GameServer()->m_ModNum <= CGameContext::MOD_ZCATCH))
+		return;
+
 	if(W == m_ActiveWeapon)
 		return;
 
@@ -115,7 +156,7 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
-	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000) && !(GameServer()->m_ModNum == CGameContext::MOD_ZCATCH && g_Config.m_SvWeaponType == 6))
 	{
 		// time's up, return
 		m_aWeapons[WEAPON_NINJA].m_Got = false;
@@ -266,7 +307,7 @@ void CCharacter::FireWeapon()
 		return;
 
 	// check for ammo
-	if(!m_aWeapons[m_ActiveWeapon].m_Ammo)
+	if(!m_aWeapons[m_ActiveWeapon].m_Ammo && (GameServer()->m_ModNum < CGameContext::MOD_IDM || GameServer()->m_ModNum > CGameContext::MOD_ZCATCH))
 	{
 		// 125ms is a magical limit of how fast a human can click
 		m_ReloadTimer = 125 * Server()->TickSpeed() / 1000;
@@ -703,6 +744,9 @@ void CCharacter::Die(int Killer, int Weapon)
 
 bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 {
+	if(GameServer()->m_ModNum >= CGameContext::MOD_IDM && GameServer()->m_ModNum <= CGameContext::MOD_ZCATCH && g_Config.m_SvOnehitKill)
+		Dmg = 10; //this should be solved by another way
+	
 	m_Core.m_Vel += Force;
 
 	if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) && !g_Config.m_SvTeamdamage)
