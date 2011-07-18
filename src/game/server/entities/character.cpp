@@ -156,7 +156,7 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
-	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000) && !(GameServer()->m_ModNum == CGameContext::MOD_ZCATCH && g_Config.m_SvWeaponType == 6))
+	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000) && !(GameServer()->m_ModNum >= CGameContext::MOD_IDM && GameServer()->m_ModNum <= CGameContext::MOD_ZCATCH && g_Config.m_SvWeaponType == 6))
 	{
 		// time's up, return
 		m_aWeapons[WEAPON_NINJA].m_Got = false;
