@@ -1403,9 +1403,41 @@ void CGameContext::ConMute(IConsole::IResult *pResult, void *pUserData)
 	if(ClientID >= 0 && ClientID < MAX_CLIENTS && pSelf->m_apPlayers[ClientID])
 	{
 		pSelf->m_apPlayers[ClientID]->muted = time;
-		str_format(buf, 63, "'%s' is muted for %d seconds!", pSelf->Server()->ClientName(ClientID), time);
+		str_format(buf, sizeof(buf), "'%s' is muted for %d seconds!", pSelf->Server()->ClientName(ClientID), time);
 		pSelf->SendChat(-1, CGameContext::CHAT_ALL, buf);
 	}	
+}
+
+void CGameContext::ConUnMute(IConsole::IResult *pResult, void *pUserData)
+{
+	char buf[64];
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	
+	int ClientID = pResult->GetInteger(0);
+	
+	if(ClientID >= 0 && ClientID < MAX_CLIENTS && pSelf->m_apPlayers[ClientID])
+	{
+		pSelf->m_apPlayers[ClientID]->muted = 0;
+		
+		str_format(buf, sizeof(buf), "'%s' isn't muted anymore!'", pSelf->Server()->ClientName(ClientID));
+		pSelf->SendChat(-1, CGameContext::CHAT_ALL, buf);
+	}
+}
+
+void CGameContext::ConMutes(IConsole::IResult *pResult, void *pUserData)
+{
+	char buf[64];
+	int i;
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	
+	for(i=0;i<MAX_CLIENTS;i++)
+	{
+		if(pSelf->m_apPlayers[i] && pSelf->m_apPlayers[i]->muted > 0)
+		{
+			str_format(buf, sizeof(buf), "id: %d name: '%s' seconds: %d", i, pSelf->Server()->ClientName(i), pSelf->m_apPlayers[i]->muted);
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "mutes", buf);
+		}
+	}
 }
 
 void CGameContext::OnConsoleInit()
@@ -1414,6 +1446,9 @@ void CGameContext::OnConsoleInit()
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	
 	Console()->Register("mute", "ii", CFGFLAG_SERVER, ConMute, this, "mute other players");
+	Console()->Register("unmute", "i", CFGFLAG_SERVER, ConUnMute, this, "unmute other players");
+	Console()->Register("mutes", "", CFGFLAG_SERVER, ConMutes, this, "list mutes");
+	
 	Console()->Register("tune", "si", CFGFLAG_SERVER, ConTuneParam, this, "Tune variable to value");
 	Console()->Register("tune_reset", "", CFGFLAG_SERVER, ConTuneReset, this, "Reset tuning");
 	Console()->Register("tune_dump", "", CFGFLAG_SERVER, ConTuneDump, this, "Dump tuning");
