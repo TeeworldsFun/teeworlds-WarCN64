@@ -10,6 +10,7 @@ public:
 	virtual void Tick();
 	virtual void OnCharacterSpawn(class CCharacter *pChr);
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon);
+	virtual bool OnEntity(int Index, vec2 Pos); 
 };
 
 #endif
