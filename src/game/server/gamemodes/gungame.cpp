@@ -68,14 +68,18 @@ int CGameControllerGG::OnCharacterDeath(class CCharacter *pVictim, class CPlayer
 		aPlayerWeapons[pKiller->GetCID()] = NewWeapon;
 
 		CCharacter *pChr = pKiller->GetCharacter();
-		pChr->RemWeapons(); //remove all weapons
+		if(pChr)
+		{
+			pChr->RemWeapons(); //remove all weapons
+			
+			if(NewWeapon == WEAPON_HAMMER)
+				pChr->GiveWeapon(WEAPON_HAMMER, -1);
+			else
+				pChr->GiveWeapon(NewWeapon, g_Config.m_SvGGEndlessAmmo ? -1 : 10);
 		
-		if(NewWeapon == WEAPON_HAMMER)
-			pChr->GiveWeapon(WEAPON_HAMMER, -1);
-		else
-			pChr->GiveWeapon(NewWeapon, g_Config.m_SvGGEndlessAmmo ? -1 : 10);
-		
-		pChr->SetWeapon(NewWeapon);
+			pChr->SetWeapon(NewWeapon);
+		}
+
 		PrintNewWeapon(pKiller->GetCID());
 	}
 
