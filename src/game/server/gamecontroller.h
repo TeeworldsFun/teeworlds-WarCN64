@@ -141,6 +141,10 @@ public:
 	int ClampTeam(int Team);
 
 	virtual void PostReset();
+
+	//east: ...
+	virtual bool IsGunGame();
+	virtual bool WPickupAllowed(int Weapon, int ClientID);
 };
 
 #endif
