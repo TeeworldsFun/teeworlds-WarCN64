@@ -4,9 +4,12 @@
 
 class CGameControllerGG : public IGameController
 {
+	int aPlayerWeapons[MAX_CLIENTS];
 public:
 	CGameControllerGG(class CGameContext *pGameServer);
 	virtual void Tick();
+	virtual void OnCharacterSpawn(class CCharacter *pChr);
+	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon);
 };
 
 #endif
