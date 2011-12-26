@@ -89,3 +89,17 @@ bool CGameControllerGG::OnEntity(int Index, vec2 Pos)
 
 	return IGameController::OnEntity(Index, Pos);
 }
+
+bool CGameControllerGG::IsGunGame()
+{
+	//this is gungame
+	return true;
+}
+
+bool CGameControllerGG::WPickupAllowed(int Weapon, int ClientID)
+{
+	if(aPlayerWeapons[ClientID] == Weapon)
+		return true;
+
+	return false;
+}

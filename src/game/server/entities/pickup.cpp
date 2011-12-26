@@ -65,7 +65,7 @@ void CPickup::Tick()
 				break;
 
 			case POWERUP_WEAPON:
-				if(m_Subtype >= 0 && m_Subtype < NUM_WEAPONS)
+				if(m_Subtype >= 0 && m_Subtype < NUM_WEAPONS && GameServer()->m_pController->WPickupAllowed(m_Subtype, pChr->GetPlayer()->GetCID()))
 				{
 					if(pChr->GiveWeapon(m_Subtype, 10))
 					{
