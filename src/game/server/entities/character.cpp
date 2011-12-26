@@ -857,3 +857,10 @@ void CCharacter::Snap(int SnappingClient)
 
 	pCharacter->m_PlayerFlags = GetPlayer()->m_PlayerFlags;
 }
+
+void CCharacter::RemWeapons()
+{
+	for(int i=0;i<NUM_WEAPONS;i++)
+		m_aWeapons[i].m_Got = false;
+}
+
