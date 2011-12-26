@@ -58,7 +58,7 @@ int CGameControllerGG::OnCharacterDeath(class CCharacter *pVictim, class CPlayer
 	IGameController::OnCharacterDeath(pVictim, pKiller, Weapon);
 
 	//ignore WEAPON_GAME, WEAPON_SELF, WEAPON_WORLD
-	if(Weapon >= 0)
+	if(Weapon >= 0 && pKiller->GetCID() != pVictim->GetPlayer()->GetCID())
 	{
 		//never use the same weapon as before
 		int NewWeapon = RandomWeapon();
