@@ -47,7 +47,7 @@ void CGameControllerGG::OnCharacterSpawn(class CCharacter *pChr)
 	if(aPlayerWeapons[ClientID] == WEAPON_HAMMER)
 		pChr->GiveWeapon(WEAPON_HAMMER, -1);
 	else
-		pChr->GiveWeapon(aPlayerWeapons[ClientID], g_Config.m_SvGGEndlessAmmo ? -1 : 10);
+		pChr->GiveWeapon(aPlayerWeapons[ClientID], g_Config.m_SvGGInfiniteAmmo ? -1 : 10);
 
 	pChr->SetWeapon(aPlayerWeapons[ClientID]);
 	//PrintNewWeapon(ClientID);
@@ -75,7 +75,7 @@ int CGameControllerGG::OnCharacterDeath(class CCharacter *pVictim, class CPlayer
 			if(NewWeapon == WEAPON_HAMMER)
 				pChr->GiveWeapon(WEAPON_HAMMER, -1);
 			else
-				pChr->GiveWeapon(NewWeapon, g_Config.m_SvGGEndlessAmmo ? -1 : 10);
+				pChr->GiveWeapon(NewWeapon, g_Config.m_SvGGInfiniteAmmo ? -1 : 10);
 		
 			pChr->SetWeapon(NewWeapon);
 		}
@@ -88,7 +88,7 @@ int CGameControllerGG::OnCharacterDeath(class CCharacter *pVictim, class CPlayer
 
 bool CGameControllerGG::OnEntity(int Index, vec2 Pos)
 {
-	if(g_Config.m_SvGGEndlessAmmo)
+	if(g_Config.m_SvGGInfiniteAmmo)
 	{
 		if(Index == ENTITY_WEAPON_SHOTGUN || Index == ENTITY_WEAPON_GRENADE || Index == ENTITY_WEAPON_RIFLE)
 			return false; //don't spawn weapons
