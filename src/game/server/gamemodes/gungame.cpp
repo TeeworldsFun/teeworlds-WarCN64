@@ -50,6 +50,7 @@ void CGameControllerGG::OnCharacterSpawn(class CCharacter *pChr)
 		pChr->GiveWeapon(aPlayerWeapons[ClientID], g_Config.m_SvGGEndlessAmmo ? -1 : 10);
 
 	pChr->SetWeapon(aPlayerWeapons[ClientID]);
+	//PrintNewWeapon(ClientID);
 }
 
 int CGameControllerGG::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon)
@@ -70,6 +71,7 @@ int CGameControllerGG::OnCharacterDeath(class CCharacter *pVictim, class CPlayer
 		pChr->RemWeapons(); //remove all weapons
 		pChr->GiveWeapon(NewWeapon, g_Config.m_SvGGEndlessAmmo ? -1 : 10);
 		pChr->SetWeapon(NewWeapon);
+		PrintNewWeapon(pKiller->GetCID());
 	}
 
 	return 0;
@@ -102,4 +104,31 @@ bool CGameControllerGG::WPickupAllowed(int Weapon, int ClientID)
 		return true;
 
 	return false;
+}
+
+void CGameControllerGG::PrintNewWeapon(int ClientID)
+{
+	const char *name = "<invalid>";
+	switch(aPlayerWeapons[ClientID])
+	{
+		case WEAPON_GUN:
+			name = "Gun";	
+		break;
+		case WEAPON_HAMMER:
+			name = "Hammer";
+		break;
+		case WEAPON_SHOTGUN:
+			name = "Shotgun";
+		break;
+		case WEAPON_GRENADE:
+			name = "Grenade";
+		break;
+		case WEAPON_RIFLE:
+			name = "Rifle";
+		break;
+	}
+
+	char buf[128];
+	str_format(buf, sizeof(buf), "New Weapon: %s", name);
+	GameServer()->SendChatTarget(ClientID, buf);
 }

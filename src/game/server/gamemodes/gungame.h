@@ -5,6 +5,7 @@
 class CGameControllerGG : public IGameController
 {
 	int aPlayerWeapons[MAX_CLIENTS];
+	void PrintNewWeapon(int ClientID);
 public:
 	CGameControllerGG(class CGameContext *pGameServer);
 	
