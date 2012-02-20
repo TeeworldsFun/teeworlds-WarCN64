@@ -209,6 +209,7 @@ public:
     static inline int GetPlayerColorFeet(lua_State *L); //Todo: implement me
     static inline int GetPlayerColorBody(lua_State *L); //Todo: implement me
     static inline int GetPlayerColorSkin(lua_State *L); //Todo: implement me
+	static inline int SetPlayerScore(lua_State *L);
 
     //Config
     static inline int GetConfigValue(lua_State *L);
