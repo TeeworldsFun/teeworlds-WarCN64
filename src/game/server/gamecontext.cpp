@@ -39,6 +39,8 @@ void CGameContext::Construct(int Resetting)
 
 	if(Resetting==NO_RESET)
 		m_pVoteOptionHeap = new CHeap();
+
+	m_pLua = new CLua(this);
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -426,10 +428,7 @@ void CGameContext::SwapTeams()
 }
 
 void CGameContext::OnTick()
-{
-	 if (!m_pLua)
-        m_pLua = new CLua(this);
-
+{ 
 	// check tuning
 	CheckPureTuning();
 
@@ -1586,6 +1585,12 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
+	if(m_pLua)
+	{
+		delete m_pLua;
+		m_pLua = 0;
+	}
+
 	delete m_pController;
 	m_pController = 0;
 	Clear();
