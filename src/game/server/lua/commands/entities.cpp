@@ -394,10 +394,10 @@ int CLuaFile::LaserCreate(lua_State *L)
 	int Owner;
 
 	lua_getglobal(L, "pLUA");
-    CLuaFile *pSelf = (CLuaFile *)lua_touserdata(L, -1);
-    lua_Debug Frame;
-    lua_getstack(L, 1, &Frame);
-    lua_getinfo(L, "nlSf", &Frame);
+	CLuaFile *pSelf = (CLuaFile *)lua_touserdata(L, -1);
+	lua_Debug Frame;
+	lua_getstack(L, 1, &Frame);
+	lua_getinfo(L, "nlSf", &Frame);
 
 	if(!lua_isnumber(L, 1) || !lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4) || !lua_isnumber(L, 5) || !lua_isnumber(L, 6))
 		return 0;
@@ -408,4 +408,6 @@ int CLuaFile::LaserCreate(lua_State *L)
 	Owner = lua_tonumber(L, 6);
 
 	new CLaser(&pSelf->m_pServer->m_World, Pos, Dir, pSelf->m_pServer->Tuning()->m_LaserReach, Owner);		
+
+	return 0;
 }
