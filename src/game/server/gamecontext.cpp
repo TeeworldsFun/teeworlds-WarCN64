@@ -1501,7 +1501,7 @@ void CGameContext::OnConsoleInit()
 
 
 	//lua
-	Console()->Register("lua", "s?ssssssss", CFGFLAG_CLIENT, ConLua, this, "Exec a lua function");
+	Console()->Register("lua", "s?ssssssss", CFGFLAG_SERVER, ConLua, this, "Exec a lua function");
 
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 }
