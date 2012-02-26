@@ -304,3 +304,41 @@ int CLuaFile::AbortSpawn(lua_State *L)
     return 0;
 }
 
+int CLuaFile::GetJoinTeamClientID(lua_State *L)
+{
+	lua_getglobal(L, "pLUA");
+	CLuaFile *pSelf = (CLuaFile *)lua_touserdata(L, -1);
+	lua_Debug Frame;
+	lua_getstack(L, 1, &Frame);
+	lua_getinfo(L, "nlSf", &Frame);
+
+	lua_pushinteger(L, pSelf->m_pLuaHandler->m_EventListener.m_TeamJoinClientID);
+	return 1;
+}
+
+int CLuaFile::GetSelectedTeam(lua_State *L)
+{
+	lua_getglobal(L, "pLUA");
+	CLuaFile *pSelf = (CLuaFile *)lua_touserdata(L, -1);
+	lua_Debug Frame;
+	lua_getstack(L, 1, &Frame);
+	lua_getinfo(L, "nlSf", &Frame);
+
+	lua_pushinteger(L, pSelf->m_pLuaHandler->m_EventListener.m_SelectedTeam);
+
+	return 1;
+}
+
+int CLuaFile::AbortTeamJoin(lua_State *L)
+{
+	lua_getglobal(L, "pLUA");
+	CLuaFile *pSelf = (CLuaFile *)lua_touserdata(L, -1);
+	lua_Debug Frame;
+	lua_getstack(L, 1, &Frame);
+	lua_getinfo(L, "nlSf", &Frame);
+
+	pSelf->m_pLuaHandler->m_EventListener.m_AbortTeamJoin = true;
+
+	return 0;
+}
+

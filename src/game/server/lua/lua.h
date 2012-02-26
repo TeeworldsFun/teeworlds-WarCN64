@@ -81,6 +81,11 @@ public:
 
 	//OnCanSpawn
 	bool m_AbortSpawn;
+
+	//OnPlayerJoinTeam
+	int m_TeamJoinClientID;
+	int m_SelectedTeam;
+	bool m_AbortTeamJoin;
 };
 
 class CLuaFile
@@ -268,7 +273,10 @@ public:
 
     static inline int Win(lua_State *L);
 
-
+	//OnPlayerJoinTeam
+	static inline int GetJoinTeamClientID(lua_State *L);
+	static inline int GetSelectedTeam(lua_State *L);
+	static inline int AbortTeamJoin(lua_State *L);
 };
 
 class CLua
