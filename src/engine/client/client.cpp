@@ -1597,7 +1597,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			const unsigned char *pData = Unpacker.GetRaw(Size);
 
 			// check fior errors
-			if(Unpacker.Error() || Size <= 0 || FileCRC != m_lModFiles[m_ModFileCurrentNumber].m_Crc || !m_FileDownloadHandle)
+			if(Unpacker.Error() || Size <= 0 ||  !m_FileDownloadHandle)
 				return;
 
 			m_FileDownloadAmount += Size;
@@ -1635,7 +1635,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			}
 			else
 			{
-			    while(m_FileDownloadSegments < g_Config.m_ClDownloadSegments)
+			    //while(m_FileDownloadSegments < g_Config.m_ClDownloadSegments)
 			    {
                     // request new chunk
                     m_ModFileCurrentChunk++;
