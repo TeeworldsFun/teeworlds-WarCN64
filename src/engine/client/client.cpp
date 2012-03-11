@@ -1526,7 +1526,11 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			{
 				IOHANDLE TempFileDownloadHandle = Storage()->OpenFile(aFileName, IOFLAG_READ, IStorage::TYPE_SAVE);
 				if(TempFileDownloadHandle)
+				{
+					if(tmp.m_Size != (int)io_length(TempFileDownloadHandle))
+						bUpdate = true;
 					io_close(TempFileDownloadHandle);
+				}
 				else
 					bUpdate = true;
 			}
@@ -1540,11 +1544,10 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 					str_format(aBuf, sizeof(aBuf), "File ('%s') is valid", aFileName);
                 m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "lua", aBuf);
             }
+			m_lModFiles.add(tmp);
 			if(bUpdate)
 			{	
-				//File needs update -> has to be downloaded again
-			
-				m_lModFiles.add(tmp);
+				//File needs update -> has to be downloaded again				
 				if(m_FileDownloadHandle)
 					io_close(m_FileDownloadHandle);
 				m_FileDownloadHandle = Storage()->OpenFile(aFileName, IOFLAG_WRITE, IStorage::TYPE_SAVE);
@@ -1561,8 +1564,8 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			}
 			else
 			{			
-				//File is up to date
-				if ((tmp.m_Flags&CModFile::FILEFLAG_LAUNCH))
+				//File is up to date				
+				if ((m_lModFiles[m_ModFileCurrentNumber].m_Flags&CModFile::FILEFLAG_LAUNCH))
 				{
 					char aBuf[1024];
 					Storage()->GetPath(IStorage::TYPE_SAVE, aFileName, aBuf, sizeof(aBuf));
@@ -1601,18 +1604,22 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 				return;
 
 			m_FileDownloadAmount += Size;
-            mem_copy(&m_pFileDownloadCache[(1024-128) * Chunk], pData, Size);
-
+            mem_copy(&m_pFileDownloadCache[(1024-128) * Chunk], pData, Size);			
 			if(Last)
 			{
 			    io_write(m_FileDownloadHandle, m_pFileDownloadCache, m_lModFiles[m_ModFileCurrentNumber].m_Size);
 				if(m_FileDownloadHandle)
 					io_close(m_FileDownloadHandle);
 				m_FileDownloadHandle = 0;
-
-
+				
 				if ((m_lModFiles[m_ModFileCurrentNumber].m_Flags&CModFile::FILEFLAG_LAUNCH))
 				{
+					if(g_Config.m_Debug)
+                    {          
+						char aBuf2[256];
+                        str_format(aBuf2, sizeof(aBuf2), "Launch %s", m_lModFiles[m_ModFileCurrentNumber].m_aFileDir);
+                        m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "lua", aBuf2);
+                    }
 					char aBuf[1024];
 					Storage()->GetPath(IStorage::TYPE_SAVE, m_lModFiles[m_ModFileCurrentNumber].m_aFileDir, aBuf, sizeof(aBuf));
 					GameClient()->AddLuaFile(aBuf);
@@ -1635,7 +1642,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			}
 			else
 			{
-			    //while(m_FileDownloadSegments < g_Config.m_ClDownloadSegments)
+			    while(m_FileDownloadSegments < g_Config.m_ClDownloadSegments)
 			    {
                     // request new chunk
                     m_ModFileCurrentChunk++;
@@ -1651,7 +1658,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
                     if(g_Config.m_Debug)
                     {
                         char aBuf[256];
-                        str_format(aBuf, sizeof(aBuf), "requested chunk %d", m_MapdownloadChunk);
+                        str_format(aBuf, sizeof(aBuf), "requested chunk %d", m_ModFileCurrentChunk);
                         m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client/network", aBuf);
                     }
 			    }
