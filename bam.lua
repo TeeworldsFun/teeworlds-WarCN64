@@ -18,7 +18,11 @@ function Script(name)
 	if family == "windows" then
 		return str_replace(name, "/", "\\")
 	end
-	return "python " .. name
+	if platform == "macosx" then
+        return "/Library/Frameworks/Python.framework/Versions/3.2/bin/python3.2 " .. name
+    else
+        return "python " .. name
+	end
 end
 
 function CHash(output, ...)
@@ -408,7 +412,7 @@ if platform == "macosx" then
 		x86_64_r = build(release_settings_x86_64)
 	end
 
-	DefaultTarget("game_debug_x86")
+	--DefaultTarget("game_debug_x86")
 
 	if arch == "ia32" then
 		PseudoTarget("release", ppc_r, x86_r)
