@@ -59,6 +59,8 @@ public:
 	bool GiveWeapon(int Weapon, int Ammo);
 	void GiveNinja();
 
+	void RemoveWeapons();
+
 	void SetEmote(int Emote, int Tick);
 
 	bool IsAlive() const { return m_Alive; }

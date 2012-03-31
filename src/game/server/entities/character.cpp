@@ -57,45 +57,9 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_EmoteStop = -1;
 	m_LastAction = -1;
 	
-	if(GameServer()->m_ModNum >= CGameContext::MOD_IDM && GameServer()->m_ModNum <= CGameContext::MOD_ZCATCH)
-	{
-		if(g_Config.m_SvWeaponType == 2)
-		{
-			m_ActiveWeapon = WEAPON_GRENADE;
-			m_LastWeapon = WEAPON_HAMMER;
-        }
-		else if(g_Config.m_SvWeaponType == 3)
-		{
-			m_ActiveWeapon = WEAPON_GUN;
-			m_LastWeapon = WEAPON_HAMMER;
-        }
-		else if(g_Config.m_SvWeaponType == 4)
-		{
-			m_ActiveWeapon = WEAPON_HAMMER;
-			m_LastWeapon = WEAPON_GUN;
-        }
-        else if(g_Config.m_SvWeaponType == 5)
-        {
-        	m_ActiveWeapon = WEAPON_SHOTGUN;
-			m_LastWeapon = WEAPON_HAMMER;
-        }
-        else if(g_Config.m_SvWeaponType == 6)
-        {
-        	m_ActiveWeapon = WEAPON_NINJA;
-			m_LastWeapon = WEAPON_HAMMER;
-        }
-		else
-		{
-			m_ActiveWeapon = WEAPON_RIFLE;
-			m_LastWeapon = WEAPON_HAMMER;
-		}
-	}
-	else
-	{
-		m_ActiveWeapon = WEAPON_GUN;
-		m_LastWeapon = WEAPON_HAMMER;
-	}
-	
+	m_ActiveWeapon = WEAPON_GUN;
+	m_LastWeapon = WEAPON_HAMMER;
+		
 	m_QueuedWeapon = -1;
 
 	m_pPlayer = pPlayer;
@@ -126,9 +90,6 @@ void CCharacter::Destroy()
 
 void CCharacter::SetWeapon(int W)
 {
-	if((GameServer()->m_ModNum >= CGameContext::MOD_IDM && GameServer()->m_ModNum <= CGameContext::MOD_ZCATCH))
-		return;
-
 	if(W == m_ActiveWeapon)
 		return;
 
@@ -307,7 +268,7 @@ void CCharacter::FireWeapon()
 		return;
 
 	// check for ammo
-	if(!m_aWeapons[m_ActiveWeapon].m_Ammo && (GameServer()->m_ModNum < CGameContext::MOD_IDM || GameServer()->m_ModNum > CGameContext::MOD_ZCATCH))
+	if(!m_aWeapons[m_ActiveWeapon].m_Ammo)
 	{
 		// 125ms is a magical limit of how fast a human can click
 		m_ReloadTimer = 125 * Server()->TickSpeed() / 1000;
@@ -496,7 +457,8 @@ void CCharacter::HandleWeapons()
 			if ((Server()->Tick() - m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart) >= AmmoRegenTime * Server()->TickSpeed() / 1000)
 			{
 				// Add some ammo
-				m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, 10);
+				if(m_aWeapons[m_ActiveWeapon].m_Ammo != -1) //ignore on unlimited ammo
+					m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, 10);
 				m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart = -1;
 			}
 		}
@@ -915,3 +877,13 @@ void CCharacter::Snap(int SnappingClient)
 
 	pCharacter->m_PlayerFlags = GetPlayer()->m_PlayerFlags;
 }
+
+void CCharacter::RemoveWeapons()
+{
+	m_aWeapons[WEAPON_HAMMER].m_Got = false;
+	m_aWeapons[WEAPON_GUN].m_Got = false;
+	m_aWeapons[WEAPON_SHOTGUN].m_Got = false;
+	m_aWeapons[WEAPON_RIFLE].m_Got = false;
+	m_aWeapons[WEAPON_GRENADE].m_Got = false;
+}
+

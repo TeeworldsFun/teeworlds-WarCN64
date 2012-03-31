@@ -50,3 +50,41 @@ void CGameControllerITDM::Tick()
 {
 	IGameController::Tick();
 }
+
+void CGameControllerITDM::OnCharacterSpawn(class CCharacter *pChr)
+{
+	pChr->RemoveWeapons();		
+
+	pChr->IncreaseHealth(10);
+
+	if(g_Config.m_SvWeaponType == 2)
+	{
+		pChr->GiveWeapon(WEAPON_GRENADE, -1);
+		pChr->SetWeapon(WEAPON_GRENADE);
+	}
+	else if(g_Config.m_SvWeaponType == 3)
+	{
+		pChr->GiveWeapon(WEAPON_GUN, -1);
+		pChr->SetWeapon(WEAPON_GUN);
+	}
+	else if(g_Config.m_SvWeaponType == 4)
+	{
+		pChr->GiveWeapon(WEAPON_HAMMER, -1);
+		pChr->SetWeapon(WEAPON_HAMMER);
+	}
+	else if(g_Config.m_SvWeaponType == 5)
+	{
+		pChr->GiveWeapon(WEAPON_SHOTGUN, -1);
+		pChr->SetWeapon(WEAPON_SHOTGUN);
+	}
+	else if(g_Config.m_SvWeaponType == 6)
+	{
+		pChr->GiveWeapon(WEAPON_NINJA, -1);
+		pChr->SetWeapon(WEAPON_NINJA);
+	}
+	else
+	{
+		pChr->GiveWeapon(WEAPON_RIFLE, -1);
+		pChr->SetWeapon(WEAPON_RIFLE);
+	}
+}

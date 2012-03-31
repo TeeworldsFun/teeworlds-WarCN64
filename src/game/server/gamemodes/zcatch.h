@@ -10,5 +10,6 @@ public:
 	CGameControllerZCATCH(class CGameContext *pGameServer);
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon);
 	virtual void Tick();
+	virtual void OnCharacterSpawn(class CCharacter *pChr);
 };
 #endif

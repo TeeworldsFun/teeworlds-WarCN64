@@ -12,5 +12,6 @@ public:
 	CGameControllerIDM(class CGameContext *pGameServer);
 	virtual void Tick();
 	// add more virtual functions here if you wish
+	virtual void OnCharacterSpawn(class CCharacter *pChr);
 };
 #endif
