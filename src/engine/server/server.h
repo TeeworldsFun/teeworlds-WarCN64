@@ -169,6 +169,8 @@ public:
 	CRegister m_Register;
 	CMapChecker m_MapChecker;
 
+	int m_RconRestrict;
+
 	CServer();
 
 	int TrySetClientName(int ClientID, const char *pName);
@@ -255,6 +257,7 @@ public:
 	int m_aPrevStates[MAX_CLIENTS];
 	char *GetAnnouncementLine(char const *FileName);
 	unsigned m_AnnouncementLastLine;
+	void RestrictRconOutput(int ClientID) { m_RconRestrict = ClientID; }
 };
 
 #endif
