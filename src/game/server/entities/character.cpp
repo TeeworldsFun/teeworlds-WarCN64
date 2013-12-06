@@ -782,6 +782,13 @@ void CCharacter::Die(int Killer, int Weapon)
 	Msg.m_ModeSpecial = ModeSpecial;
 	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, -1);
 
+	// reset switches of team when there are no members left
+	if(Team() != TEAM_FLOCK && Team() != TEAM_SUPER && Teams()->Count(Team()) == 1 && GameServer()->Collision()->m_NumSwitchers > 0)
+	{
+		for(int i = 0; i < GameServer()->Collision()->m_NumSwitchers+1; ++i)
+			GameServer()->Collision()->m_pSwitchers[i].m_Status[Team()] = true;
+	}
+
 	// a nice sound
 	GameServer()->CreateSound(m_Pos, SOUND_PLAYER_DIE, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
 
