@@ -114,6 +114,8 @@ private:
 public:
 
 	SSwitchers* m_pSwitchers;
+
+	void ResetSwitchers(int Team);
 };
 
 void ThroughOffset(vec2 Pos0, vec2 Pos1, int *Ox, int *Oy);

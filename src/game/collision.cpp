@@ -142,15 +142,18 @@ void CCollision::Init(class CLayers *pLayers)
 	{
 		m_pSwitchers = new SSwitchers[m_NumSwitchers+1];
 
-		for (int i = 0; i < m_NumSwitchers+1; ++i)
-		{
-			for (int j = 0; j < 16; ++j)
-			{
-				m_pSwitchers[i].m_Status[j] = true;
-				m_pSwitchers[i].m_EndTick[j] = 0;
-				m_pSwitchers[i].m_Type[j] = 0;
-			}
-		}
+		for (int j = 0; j < 16; ++j)
+				ResetSwitchers(j);
+	}
+}
+
+void CCollision::ResetSwitchers(int Team)
+{
+	for (int i = 0; i < m_NumSwitchers+1; i++)
+	{
+		m_pSwitchers[i].m_Status[Team] = true;
+		m_pSwitchers[i].m_EndTick[Team] = 0;
+		m_pSwitchers[i].m_Type[Team] = 0;
 	}
 }
 
