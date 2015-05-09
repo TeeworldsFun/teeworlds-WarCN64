@@ -158,6 +158,10 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		pKiller->m_Score += min(victim->m_zCatchNumKillsInARow + 1, numPlayers);
 		++pKiller->m_Kills;
 		++victim->m_Deaths;
+		if(Players_Ingame < g_Config.m_SvLastStandingPlayers && g_Config.m_SvReleaseGame == 1)
+		{
+			// todo release victim automatically again after kill
+		}
 		/* Check if the killer has been already killed and is in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
 		{
