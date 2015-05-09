@@ -160,7 +160,11 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		++victim->m_Deaths;
 		if(Players_Ingame < g_Config.m_SvLastStandingPlayers && g_Config.m_SvReleaseGame == 1)
 		{
-			// todo release victim automatically again after kill
+		pKiller->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+		// has room for improvements, but after some thought it's better to release all instead of only the one caught, 
+		// because if new payers join the game, they stay in spec without being release, this way the will be released if 
+		// the killer either dies or kills someone
+		// todo directly release new joining players after they join the game if the ReleaseGame is running
 		}
 		/* Check if the killer has been already killed and is in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
