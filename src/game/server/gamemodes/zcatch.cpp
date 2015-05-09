@@ -515,8 +515,15 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 	}
 	else if (!str_comp_nocase("wallshotkills", category))
 	{
-		column = "numKillsWallshot";
-	}
+        	if((g_Config.m_SvMode == 1 || g_Config.m_SvMode == 2)
+        	{
+        	GameServer()->SendChatTarget(pPlayer->GetCID(), "/top score is only available in gamemodes with a laser as weapon.");
+        	return;
+        	}
+        	else {
+       		column = "numKillsWallshot";
+        	}
+    	}
 	else if (!str_comp_nocase("deaths", category))
 	{
 		column = "numDeaths";
