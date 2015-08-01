@@ -11,6 +11,8 @@
 class CGameController_zCatch: public IGameController
 {
 	int m_OldMode;
+	int m_OldColor;
+	int m_OldReleaseGame;
 	
 	void RewardWinner(int winnerId);
 	

@@ -117,9 +117,11 @@ MACRO_CONFIG_INT(SvSuicideTime, sv_suicide_time, 15, 0, 60, CFGFLAG_SERVER, "Min
 MACRO_CONFIG_INT(SvKillPenalty, sv_kill_penalty, 5, 0, 50, CFGFLAG_SERVER, "The amount of points which the score will be decreased on each suicide")
 
 // zCatch/TeeVi
-MACRO_CONFIG_INT(SvLastStandingPlayers, sv_last_standing_players, 5, 2, 16, CFGFLAG_SERVER, "How many players are needed to have last standing rounds")
+MACRO_CONFIG_INT(SvLastStandingPlayers, sv_last_standing_players, 5, 2, 17, CFGFLAG_SERVER, "How many players are needed to have last standing rounds")
 MACRO_CONFIG_INT(SvReleaseGame, sv_release_game, 0, 0, 1, CFGFLAG_SERVER, "Whether players are directly released or not when a round cannot be won due to the last standing players limitation.")
 MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 0, 0, 3, CFGFLAG_SERVER, "Bot detection (0=off, 1=fast aim, 2=follow, 3=all)")
 MACRO_CONFIG_INT(SvRanking, sv_ranking, 1, 0, 1, CFGFLAG_SERVER, "Ranking system (0=off, 1=sqlite)")
 MACRO_CONFIG_STR(SvRankingFile, sv_ranking_file, 255, "ranking.db", CFGFLAG_SERVER, "File in which the ranking and scores are saved.")
+MACRO_CONFIG_INT(SvGameColor, sv_game_color, 0, 0, 2, CFGFLAG_SERVER, "Change color hierarchy. (0 - 2)")
+
 #endif

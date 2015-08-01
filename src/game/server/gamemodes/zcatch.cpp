@@ -16,7 +16,10 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 {
 	m_pGameType = "zCatch/TeeVi";
 	m_OldMode = g_Config.m_SvMode;
+	m_OldColor = g_Config.m_SvGameColor;
+	m_OldReleaseGame = g_Config.m_SvReleaseGame;
 }
+	//jxsl13
 
 CGameController_zCatch::~CGameController_zCatch() {
 	/* save all players */
@@ -72,6 +75,7 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 	}
 }
 
+	//jxsl13
 void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
@@ -80,6 +84,15 @@ void CGameController_zCatch::Tick()
 	{
 		EndRound();
 	}
+	if ((m_OldColor != g_Config.m_SvGameColor | m_OldReleaseGame != g_Config.m_SvReleaseGame) && !GameServer()->m_World.m_Paused)
+	{
+		m_OldColor = g_Config.m_SvGameColor;
+		m_OldReleaseGame = g_Config.m_SvReleaseGame;
+		EndRound();
+	}
+
+	
+
 	
 }
 
@@ -107,6 +120,7 @@ void CGameController_zCatch::DoWincheck()
 
 		if(Players_Ingame <= 1)
 		{
+
 			//Do nothing
 		}
 		else if((Players - Players_Spec) == 1)
@@ -158,23 +172,33 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		pKiller->m_Score += min(victim->m_zCatchNumKillsInARow + 1, numPlayers);
 		++pKiller->m_Kills;
 		++victim->m_Deaths;
-		if(Players_Ingame < g_Config.m_SvLastStandingPlayers && g_Config.m_SvReleaseGame == 1)
-		{
-		pKiller->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+		
+        
 		// has room for improvements, but after some thought it's better to release all instead of only the one caught, 
 		// because if new payers join the game, they stay in spec without being release, this way the will be released if 
 		// the killer either dies or kills someone
 		// todo directly release new joining players after they join the game if the ReleaseGame is running
-		}
+		
+        
 		/* Check if the killer has been already killed and is in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
 		{
+            if ((g_Config.m_SvReleaseGame == 1) & (numPlayers < g_Config.m_SvLastStandingPlayers)) {
+            ++pKiller->m_zCatchNumKillsInARow;
+			pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
+			pKiller->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+            }
+            else{
+            
 			++pKiller->m_zCatchNumKillsInARow;
 			pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
 			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "You are caught until '%s' dies.", Server()->ClientName(pKiller->GetCID()));
 			GameServer()->SendChatTarget(victim->GetCID(), aBuf);
+            }
+            
 		}
+        
 	}
 	else
 	{
@@ -213,10 +237,33 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 {
 	if(g_Config.m_SvColorIndicator && pP->m_zCatchNumKillsInARow <= 20)
 	{
-		int Num = max(0, 160 - pP->m_zCatchNumKillsInARow * 10);
+		int Num = max(0, 240 - pP->m_zCatchNumKillsInARow * 15);
+		if(g_Config.m_SvGameColor == 2){
+		Num = max(0, 0 + pP->m_zCatchNumKillsInARow *1);
+		pP->m_TeeInfos.m_ColorBody = 0xff0000 - Num * 0x0a0a0a;
+		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
+		pP->m_TeeInfos.m_UseCustomColor = 1;
+			
+
+		}
+		if(g_Config.m_SvGameColor == 1){
+		Num = max(0, 0 + pP->m_zCatchNumKillsInARow * 10);
 		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
 		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
+			
+
+			
+		}else{
+		Num = max(0, 160 - pP->m_zCatchNumKillsInARow * 10);
+		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
+		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
+		pP->m_TeeInfos.m_UseCustomColor = 1;
+			
+
+
+		}
+
 	}
 }
 
@@ -227,6 +274,14 @@ void CGameController_zCatch::StartRound()
 	if(m_OldMode != g_Config.m_SvMode)
 	{
 		m_OldMode = g_Config.m_SvMode;
+		Server()->MapReload();
+	}
+
+	//jxsl13
+	if (m_OldColor != g_Config.m_SvGameColor | m_OldReleaseGame != g_Config.m_SvReleaseGame)
+	{
+		m_OldColor = g_Config.m_SvGameColor;
+		m_OldReleaseGame = g_Config.m_SvReleaseGame;
 		Server()->MapReload();
 	}
 	
@@ -523,7 +578,7 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 	}
 	else if (!str_comp_nocase("wallshotkills", category))
 	{
-        	if((g_Config.m_SvMode == 1 || g_Config.m_SvMode == 2)
+        	if((g_Config.m_SvMode == 1 || g_Config.m_SvMode == 2))
         	{
         	GameServer()->SendChatTarget(pPlayer->GetCID(), "/top score is only available in gamemodes with a laser as weapon.");
         	return;

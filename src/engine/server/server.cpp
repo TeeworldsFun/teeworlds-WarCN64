@@ -2002,7 +2002,7 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 	char aBuf[1024];
 	char aAddrStr[NETADDR_MAXSTRSIZE];
 	CServer* pThis = static_cast<CServer *>(pUser);
-
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "==========================================================================================");
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(pThis->m_aClients[i].m_State != CClient::STATE_EMPTY)
@@ -2016,15 +2016,16 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 										pThis->m_aClients[i].m_Authed == CServer::AUTHED_SUBADMIN ? bBuf :
 										pThis->m_aClients[i].m_Authed == CServer::AUTHED_MOD ? "(Mod)" : "";
 				const char *pAimBotStr = pThis->GameServer()->IsClientAimBot(i) ? "[aimbot]" : "";
-				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s name='%s' score=%d %s %s", i, aAddrStr,
-					pThis->m_aClients[i].m_aName, pThis->m_aClients[i].m_Score, pAuthStr, pAimBotStr);
+				str_format(aBuf, sizeof(aBuf), "id=%d name='%s' score=%d addr=%s %s %s", i, pThis->m_aClients[i].m_aName, pThis->m_aClients[i].m_Score, aAddrStr,
+					  pAuthStr, pAimBotStr);
 			}
 			else
-				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s connecting", i, aAddrStr);
+				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s (connecting...)", i, aAddrStr);
 			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 		}
 	}
 	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Quick help: kick <id> <reason=''> | ban <id> <min=5> <reason=''> | voteban <id> <sec=300> | kill <id>");
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "==========================================================================================");
 }
 
 void CServer::ConShutdown(IConsole::IResult *pResult, void *pUser)

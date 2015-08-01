@@ -719,13 +719,33 @@ void CGameContext::OnClientEnter(int ClientID)
 	// sv_allow_join 2: The player will join when the player with the most kills dies
 	else if(g_Config.m_SvAllowJoin == 2)
 	{
+		/* count players playing */
+		int numPlayers = 0;
+		for(int i = 0; i < MAX_CLIENTS; i++)
+			if(m_apPlayers[i] && !m_apPlayers[i]->m_SpecExplicit)
+				++numPlayers;
+			
+
+			//debug msg
+			char bBuf[512];
+			str_format(bBuf, sizeof(bBuf), "'%d' players", numPlayers);
+
 		for(int i = 0; i < MAX_CLIENTS; i++)
 			if(m_apPlayers[i] && ((leader && m_apPlayers[i]->m_zCatchNumKillsInARow > leader->m_zCatchNumKillsInARow) || (!leader && m_apPlayers[i]->m_zCatchNumKillsInARow)))
 				leader = m_apPlayers[i];
-		if(leader)
+		
+		if(leader){
 			leader->AddZCatchVictim(ClientID, CPlayer::ZCATCH_CAUGHT_REASON_JOINING);
-		else
+
+				if (g_Config.m_SvReleaseGame == 1 && numPlayers < g_Config.m_SvLastStandingPlayers)
+					{
+						leader->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+					}
+		}
+		else{
 			p->m_SpecExplicit = false;
+		}		
+		
 	}
 	
 	/* end zCatch */
