@@ -181,6 +181,14 @@ int CNetServer::Recv(CNetChunk *pChunk)
 				{
 					// anti spoof
 					// simulate accept so we can wait for NETMSG_INFO
+					if (g_Config.m_Debug)
+					{
+						char aAddrStr[NETADDR_MAXSTRSIZE];
+						net_addr_str(&Addr, aAddrStr, sizeof(aAddrStr), true);
+						dbg_msg("antispoof", "preaccept %s", aAddrStr);
+					}
+
+
 					CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CONNECTACCEPT, 0, 0);
 
 					/*bool Found = false;
