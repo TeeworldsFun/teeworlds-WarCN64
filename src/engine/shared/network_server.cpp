@@ -13,8 +13,8 @@
 #include "network.h"
 
 // token string / ascii representation
-// 4 digits: '0'-'9', 'a'-'z', 'A'-'Z'
-// sample: 'yt2T'
+// 4 digits: '0'-'9', 'a'-'z'
+// sample: 'yt2f'
 //
 // lazy implementation
 void CNetServer::TokenToBaseString(SECURITY_TOKEN Token, char pDst[5])
