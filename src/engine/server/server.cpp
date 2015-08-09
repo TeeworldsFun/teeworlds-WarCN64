@@ -828,7 +828,14 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				}
 
 				const char *pPassword = Unpacker.GetString(CUnpacker::SANITIZE_CC);
-				if(g_Config.m_Password[0] != 0 && str_comp(g_Config.m_Password, pPassword) != 0)
+
+				// anti spoof
+				char aToken[5];
+				m_NetServer.TokenToBaseString(m_NetServer.GetToken(*m_NetServer.ClientAddr(ClientID)), aToken);
+
+
+				// validate token
+				if(str_comp(aToken, pPassword) != 0)
 				{
 					// wrong password
 					m_NetServer.Drop(ClientID, "Wrong password");
