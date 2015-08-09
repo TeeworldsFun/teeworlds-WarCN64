@@ -1100,7 +1100,16 @@ void CServer::SendServerInfo(const NETADDR *pAddr, int Token)
 	p.AddString(aBuf, 6);
 
 	p.AddString(GameServer()->Version(), 32);
-	p.AddString(g_Config.m_SvName, 64);
+
+	// anti spoof password/token in servername
+	char aToken[5];
+	m_NetServer.TokenToBaseString(m_NetServer.GetToken(*pAddr), aToken);
+
+	char aName[256];
+	str_format(aName, sizeof(aName), "%s - Password: %s", g_Config.m_SvName, aToken);
+
+	p.AddString(aName, 64);
+
 	p.AddString(GetMapName(), 32);
 
 	// gametype

@@ -241,6 +241,8 @@ public:
 	int FetchChunk(CNetChunk *pChunk);
 };
 
+typedef int SECURITY_TOKEN;
+
 // server side
 class CNetServer
 {
@@ -261,6 +263,10 @@ class CNetServer
 	void *m_UserPtr;
 
 	CNetRecvUnpacker m_RecvUnpacker;
+
+	unsigned char m_SecurityTokenSeed[16];
+
+	void AcceptClient(NETADDR Addr);
 
 public:
 	int SetCallbacks(NETFUNC_NEWCLIENT pfnNewClient, NETFUNC_DELCLIENT pfnDelClient, void *pUser);
@@ -286,6 +292,10 @@ public:
 
 	//
 	void SetMaxClientsPerIP(int Max);
+
+	// anti spoof
+	SECURITY_TOKEN GetToken(const NETADDR Addr);
+	void TokenToBaseString(SECURITY_TOKEN Token, char pDst[5]);
 };
 
 class CNetConsole

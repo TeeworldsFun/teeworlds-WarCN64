@@ -1,12 +1,57 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/system.h>
+#include "config.h"
 
 #include <engine/console.h>
+#include <engine/message.h>
+#include <engine/shared/protocol.h>
+
+#include <engine/external/md5/md5.h>
 
 #include "netban.h"
 #include "network.h"
 
+// token string / ascii representation
+// 4 digits: '0'-'9', 'a'-'z', 'A'-'Z'
+// sample: 'yt2T'
+//
+// lazy implementation
+void CNetServer::TokenToBaseString(SECURITY_TOKEN Token, char pDst[5])
+{
+	const char Alphabet[] = {"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"};
+	const int AlphabetLen = sizeof(Alphabet)-1;
+
+	unsigned char *pOct = (unsigned char *)&Token;
+
+	for (int i = 0; i < 4; i++)
+		pDst[i] = Alphabet[pOct[i] % AlphabetLen];
+
+	pDst[4] = '\0';
+}
+
+SECURITY_TOKEN CNetServer::GetToken(NETADDR Addr)
+{
+	md5_state_t md5;
+	md5_byte_t digest[16];
+	SECURITY_TOKEN securityToken;
+
+	md5_init(&md5);
+	md5_append(&md5, (unsigned char*)m_SecurityTokenSeed, sizeof(m_SecurityTokenSeed));
+
+	Addr.port = 0; // port can diff
+	md5_append(&md5, (unsigned char*)&Addr, sizeof(Addr));
+
+	md5_finish(&md5, digest);
+
+	securityToken = *(SECURITY_TOKEN*)digest;
+
+	if (securityToken < 0) {
+		securityToken = -securityToken;
+	}
+
+	return securityToken;
+}
 
 bool CNetServer::Open(NETADDR BindAddr, CNetBan *pNetBan, int MaxClients, int MaxClientsPerIP, int Flags)
 {
@@ -28,6 +73,8 @@ bool CNetServer::Open(NETADDR BindAddr, CNetBan *pNetBan, int MaxClients, int Ma
 		m_MaxClients = 1;
 
 	m_MaxClientsPerIP = MaxClientsPerIP;
+
+	secure_random_fill(m_SecurityTokenSeed, sizeof(m_SecurityTokenSeed));
 
 	for(int i = 0; i < NET_MAX_CLIENTS; i++)
 		m_aSlots[i].m_Connection.Init(m_Socket, true);
@@ -105,6 +152,8 @@ int CNetServer::Recv(CNetChunk *pChunk)
 		if(Bytes <= 0)
 			break;
 
+		bool Found = false;
+
 		if(CNetBase::UnpackPacket(m_RecvUnpacker.m_aBuffer, Bytes, &m_RecvUnpacker.m_Data) == 0)
 		{
 			// check if we just should drop the packet
@@ -130,7 +179,11 @@ int CNetServer::Recv(CNetChunk *pChunk)
 				// TODO: check size here
 				if(m_RecvUnpacker.m_Data.m_Flags&NET_PACKETFLAG_CONTROL && m_RecvUnpacker.m_Data.m_aChunkData[0] == NET_CTRLMSG_CONNECT)
 				{
-					bool Found = false;
+					// anti spoof
+					// simulate accept so we can wait for NETMSG_INFO
+					CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CONNECTACCEPT, 0, 0);
+
+					/*bool Found = false;
 
 					// check if we already got this client
 					for(int i = 0; i < MaxClients(); i++)
@@ -187,10 +240,12 @@ int CNetServer::Recv(CNetChunk *pChunk)
 							CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CLOSE, FullMsg, sizeof(FullMsg));
 						}
 					}
+					*/
 				}
 				else
 				{
 					// normal packet, find matching slot
+					Found = false;
 					for(int i = 0; i < MaxClients(); i++)
 					{
 						if(net_addr_comp(m_aSlots[i].m_Connection.PeerAddress(), &Addr) == 0)
@@ -199,6 +254,47 @@ int CNetServer::Recv(CNetChunk *pChunk)
 							{
 								if(m_RecvUnpacker.m_Data.m_DataSize)
 									m_RecvUnpacker.Start(&Addr, &m_aSlots[i].m_Connection, i);
+								Found = true;
+							}
+						}
+					}
+
+					if (!Found)
+					{
+						// anti spoof
+						// got packet from new client
+
+						CNetChunkHeader h;
+						unsigned char *pData = m_RecvUnpacker.m_Data.m_aChunkData;
+						pData = h.Unpack(pData);
+						CUnpacker Unpacker;
+						Unpacker.Reset(pData, h.m_Size);
+						int Msg = Unpacker.GetInt() >> 1;
+
+						if (Msg == NETMSG_INFO)
+						{
+							// unpack info packet
+							const char *pVersion = Unpacker.GetString(CUnpacker::SANITIZE_CC);
+							const char *pPassword = Unpacker.GetString(CUnpacker::SANITIZE_CC);
+
+							// validate token
+							char aToken[5];
+							TokenToBaseString(GetToken(Addr), aToken);
+
+							if (str_comp(aToken, pPassword) == 0)
+							{
+								// token valid
+								// add client if possible
+								AcceptClient(Addr);
+							}
+							else
+							{
+								if (g_Config.m_Debug)
+									dbg_msg("antispoof", "invalid token '%s' doesn't match '%s'", pPassword, aToken);
+
+								// token invalid
+								const char aBuf[] = {"Wrong password"};
+								CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CLOSE, aBuf, sizeof(aBuf));
 							}
 						}
 					}
@@ -207,6 +303,32 @@ int CNetServer::Recv(CNetChunk *pChunk)
 		}
 	}
 	return 0;
+}
+
+void CNetServer::AcceptClient(NETADDR Addr)
+{
+	for(int i = 0; i < MaxClients(); i++)
+	{
+		if(m_aSlots[i].m_Connection.State() == NET_CONNSTATE_OFFLINE)
+		{
+			// prepare fake NET_CTRLMSG_CONNECT packet
+			CNetPacketConstruct m_Construct;
+
+			mem_zero(&m_Construct, sizeof(m_Construct));
+
+			unsigned char *pChunkData;
+			m_Construct.m_aChunkData[0] = NET_CTRLMSG_CONNECT;
+			m_Construct.m_DataSize = 1;
+			m_Construct.m_Flags = NET_PACKETFLAG_CONTROL;
+
+			// init NetConnection
+			m_aSlots[i].m_Connection.Feed(&m_Construct, &Addr);
+
+			if(m_pfnNewClient)
+				m_pfnNewClient(i, m_UserPtr);
+			break;
+		}
+	}
 }
 
 int CNetServer::Send(CNetChunk *pChunk)
