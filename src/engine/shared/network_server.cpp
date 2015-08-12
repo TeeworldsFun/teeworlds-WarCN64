@@ -179,17 +179,38 @@ int CNetServer::Recv(CNetChunk *pChunk)
 				// TODO: check size here
 				if(m_RecvUnpacker.m_Data.m_Flags&NET_PACKETFLAG_CONTROL && m_RecvUnpacker.m_Data.m_aChunkData[0] == NET_CTRLMSG_CONNECT)
 				{
-					// anti spoof
-					// simulate accept so we can wait for NETMSG_INFO
-					if (g_Config.m_Debug)
+					if (g_Config.m_SvPwAntispoof)
 					{
-						char aAddrStr[NETADDR_MAXSTRSIZE];
-						net_addr_str(&Addr, aAddrStr, sizeof(aAddrStr), true);
-						dbg_msg("antispoof", "preaccept %s", aAddrStr);
+						// anti spoof
+						// simulate accept so we can wait for NETMSG_INFO
+						if (g_Config.m_Debug)
+						{
+							char aAddrStr[NETADDR_MAXSTRSIZE];
+							net_addr_str(&Addr, aAddrStr, sizeof(aAddrStr), true);
+							dbg_msg("antispoof", "preaccept %s", aAddrStr);
+						}
+
+						CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CONNECTACCEPT, 0, 0);
 					}
+					else
+					{
+						bool Found = false;
 
+						// check if we already got this client
+						for(int i = 0; i < MaxClients(); i++)
+						{
+							if(m_aSlots[i].m_Connection.State() != NET_CONNSTATE_OFFLINE &&
+								net_addr_comp(m_aSlots[i].m_Connection.PeerAddress(), &Addr) == 0)
+							{
+								Found = true; // silent ignore.. we got this client already
+								break;
+							}
+						}
 
-					CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CONNECTACCEPT, 0, 0);
+						if (!Found)
+							// try to accept client
+							AcceptClient(Addr);
+					}
 				}
 				else
 				{
@@ -208,7 +229,7 @@ int CNetServer::Recv(CNetChunk *pChunk)
 						}
 					}
 
-					if (!Found)
+					if (g_Config.m_SvPwAntispoof && !Found)
 					{
 						// anti spoof
 						// got packet from new client
