@@ -970,28 +970,11 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				const char *pPassword = Unpacker.GetString(CUnpacker::SANITIZE_CC);
 
 
-				if (!g_Config.m_SvPwAntiflood)
-				{
 				if(g_Config.m_Password[0] != 0 && str_comp(g_Config.m_Password, pPassword) != 0)
 				{
 					// wrong password
 					m_NetServer.Drop(ClientID, "Wrong password");
 					return;
-					}
-				}
-				else
-				{
-					// anti spoof
-					char aToken[5];
-					m_NetServer.TokenToBaseString(m_NetServer.GetToken(*m_NetServer.ClientAddr(ClientID)), aToken);
-
-					// validate token
-					if(str_comp(aToken, pPassword) != 0)
-					{
-						// wrong password
-						m_NetServer.Drop(ClientID, "Wrong password");
-						return;
-					}
 				}
 
 				m_aClients[ClientID].m_State = CClient::STATE_CONNECTING;
@@ -1402,19 +1385,7 @@ void CServer::SendServerInfo(const NETADDR *pAddr, int Token)
 
 	char aName[256];
 
-	if (g_Config.m_SvPwAntiflood)
-	{
-	// send the alternative server name when a admin is online
-	char aToken[5];
-	m_NetServer.TokenToBaseString(m_NetServer.GetToken(*pAddr), aToken);
-
-	str_format(aName, sizeof(aName), "Password: %s - %s", aToken, (m_numLoggedInAdmins && str_length(g_Config.m_SvNameAdmin)) ? g_Config.m_SvNameAdmin : g_Config.m_SvName);
-
-	p.AddString(aName, 64);
-	}
-	else{
 	p.AddString((m_numLoggedInAdmins && str_length(g_Config.m_SvNameAdmin)) ? g_Config.m_SvNameAdmin : g_Config.m_SvName, 64);
-	}
 
 	p.AddString(GetMapName(), 32);
 
