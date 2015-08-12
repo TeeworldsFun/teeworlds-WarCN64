@@ -267,6 +267,7 @@ class CNetServer
 	unsigned char m_SecurityTokenSeed[16];
 
 	void AcceptClient(NETADDR Addr);
+	int NumClientsWithAddr(NETADDR Addr);
 
 public:
 	int SetCallbacks(NETFUNC_NEWCLIENT pfnNewClient, NETFUNC_DELCLIENT pfnDelClient, void *pUser);

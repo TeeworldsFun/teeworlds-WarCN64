@@ -256,6 +256,15 @@ int CNetServer::Recv(CNetChunk *pChunk)
 
 void CNetServer::AcceptClient(NETADDR Addr)
 {
+	// check for sv_max_clients_per_ip
+	if (NumClientsWithAddr(Addr) + 1 > m_MaxClientsPerIP)
+	{
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Only %d players with the same IP are allowed", m_MaxClientsPerIP);
+		CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CLOSE, aBuf, sizeof(aBuf));
+		return;
+	}
+
 	for(int i = 0; i < MaxClients(); i++)
 	{
 		if(m_aSlots[i].m_Connection.State() == NET_CONNSTATE_OFFLINE)
@@ -278,6 +287,27 @@ void CNetServer::AcceptClient(NETADDR Addr)
 			break;
 		}
 	}
+}
+
+int CNetServer::NumClientsWithAddr(NETADDR Addr)
+{
+	NETADDR ThisAddr = Addr, OtherAddr;
+
+	int FoundAddr = 0;
+	ThisAddr.port = 0;
+
+	for(int i = 0; i < MaxClients(); ++i)
+	{
+		if(m_aSlots[i].m_Connection.State() == NET_CONNSTATE_OFFLINE)
+			continue;
+
+		OtherAddr = *m_aSlots[i].m_Connection.PeerAddress();
+		OtherAddr.port = 0;
+		if(!net_addr_comp(&ThisAddr, &OtherAddr))
+			FoundAddr++;
+	}
+
+	return FoundAddr;
 }
 
 int CNetServer::Send(CNetChunk *pChunk)
