@@ -286,10 +286,14 @@ void CNetServer::AcceptClient(NETADDR Addr)
 		return;
 	}
 
+	bool Found = false;
+
 	for(int i = 0; i < MaxClients(); i++)
 	{
 		if(m_aSlots[i].m_Connection.State() == NET_CONNSTATE_OFFLINE)
 		{
+			Found = true;
+
 			// prepare fake NET_CTRLMSG_CONNECT packet
 			CNetPacketConstruct m_Construct;
 
@@ -307,6 +311,12 @@ void CNetServer::AcceptClient(NETADDR Addr)
 				m_pfnNewClient(i, m_UserPtr);
 			break;
 		}
+	}
+
+	if (!Found)
+	{
+		const char FullMsg[] = "This server is full";
+		CNetBase::SendControlMsg(m_Socket, &Addr, 0, NET_CTRLMSG_CLOSE, FullMsg, sizeof(FullMsg));
 	}
 }
 
