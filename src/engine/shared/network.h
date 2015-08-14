@@ -156,6 +156,7 @@ private:
 	int m_Token;
 	int m_RemoteClosed;
 	bool m_BlockCloseMsg;
+	bool m_UnknownSeq;
 
 	TStaticRingBuffer<CNetChunkResend, NET_CONN_BUFFERSIZE> m_Buffer;
 
@@ -212,6 +213,7 @@ public:
 
 	// anti spoof
 	void DirectInit(NETADDR &Addr, SECURITY_TOKEN SecurityToken);
+	void SetUnknownSeq() { m_UnknownSeq = true; }
 };
 
 class CConsoleNetConnection
