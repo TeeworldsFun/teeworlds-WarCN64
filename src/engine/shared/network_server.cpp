@@ -277,7 +277,7 @@ void CNetServer::OnPreConnMsg(NETADDR &Addr, CNetPacketConstruct &Packet)
 
 	if (IsCtrl && CtrlMsg == NET_CTRLMSG_CONNECT)
 	{
-		if (g_Config.m_SvVanillaAntiSpoof)
+		if (g_Config.m_SvVanillaAntiSpoof && g_Config.m_Password[0] == '\0')
 		{
 			// simulate accept
 			SendControl(Addr, NET_CTRLMSG_CONNECTACCEPT, SECURITY_TOKEN_MAGIC,
@@ -332,7 +332,7 @@ void CNetServer::OnPreConnMsg(NETADDR &Addr, CNetPacketConstruct &Packet)
 			TryAcceptClient(Addr, NET_SECURITY_TOKEN_UNSUPPORTED);
 		}
 	}
-	else if(!IsCtrl && g_Config.m_SvVanillaAntiSpoof)
+	else if(!IsCtrl && g_Config.m_SvVanillaAntiSpoof && g_Config.m_Password[0] == '\0')
 	{
 		CNetChunkHeader h;
 
