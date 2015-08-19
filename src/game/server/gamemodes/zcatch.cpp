@@ -362,8 +362,12 @@ void CGameController_zCatch::EndRound()
 				}
 				// release all players
 				GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
-				GameServer()->m_apPlayers[i]->m_zCatchNumKillsInARow = 0;
+				GameServer()->m_apPlayers[i]->m_zCatchNumKillsInARow = 0;				
+				
 			}
+
+			/**Update Colours of explicit spectating tees*/
+			OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 		}
 	}
 
