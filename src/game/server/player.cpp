@@ -21,6 +21,8 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_SpectatorID = SPEC_FREEVIEW;
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
+	// jxsl13  whispering chat functionality
+	m_Recipient_ID = -1;
 	
 	//zCatch
 	m_CaughtBy = ZCATCH_NOT_CAUGHT;

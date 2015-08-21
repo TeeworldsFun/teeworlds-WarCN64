@@ -161,6 +161,10 @@ public:
 	int m_AimBotLastDetection;
 	vec2 m_AimBotLastDetectionPos;
 	vec2 m_AimBotLastDetectionPosVictim;
+
+
+	/** recepient id by jxsl13*/
+	int m_Recipient_ID;
 	
 private:
 	CCharacter *m_pCharacter;
@@ -173,6 +177,8 @@ private:
 	bool m_Spawning;
 	int m_ClientID;
 	int m_Team;
+
+	
 };
 
 #endif

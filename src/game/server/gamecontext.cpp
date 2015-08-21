@@ -815,9 +815,25 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 	// update spectator modes
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 	{
-		if(m_apPlayers[i] && m_apPlayers[i]->m_SpectatorID == ClientID)
+
+		if(m_apPlayers[i]){ /**check if player still exists*/
+
+		if(m_apPlayers[i]->m_SpectatorID == ClientID)
+		{
 			m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
+		}
+
+	// reset conversation's with dropped/left ID
+		if(m_apPlayers[i]->m_Recipient_ID == ClientID)
+		{
+			m_apPlayers[i]->m_Recipient_ID = -1;
+		}
+
 	}
+
+	}
+
+	
 }
 
 // returns whether the player is allowed to chat, informs the player and mutes him if needed
@@ -881,6 +897,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			pMessage++;
 		}
 
+
+
+
+
+
 		/* begin zCatch*/
 		if(!str_comp_num("/", pMsg->m_pMessage, 1))
 		{
@@ -927,8 +948,14 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				SendChatTarget(ClientID, "--- Help 3 / 4 ---");
 				SendChatTarget(ClientID, "You can write private messages:");
-				SendChatTarget(ClientID, "/t <name> <msg>: write PM to <name>");
-				SendChatTarget(ClientID, "/ti <id> <msg>: write PM via ID");
+				SendChatTarget(ClientID, "/w <name> <msg>: write PM to <name>");
+				SendChatTarget(ClientID, "/wi <id> <msg>: write PM via ID");
+				SendChatTarget(ClientID, "/c <name>: start conversation with <name>");
+				SendChatTarget(ClientID, "/ci <id>: start conversation with <id>");
+				SendChatTarget(ClientID, "/c : End conversation.");
+
+
+
 			}
 			else if(!str_comp_nocase("help 4", pMsg->m_pMessage + 1))
 			{
@@ -979,13 +1006,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 			}
 			// tell / PM someone privately
-			else if(!str_comp_nocase_num("t ", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("ti ", pMsg->m_pMessage + 1, 3))
+			else if(!str_comp_nocase_num("w ", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("wi ", pMsg->m_pMessage + 1, 3))
 			{
 				const char *recipientStart, *msgStart;
 				int recipient = -1;
 				
 				// by name
-				if(!str_comp_nocase_num("t ", pMsg->m_pMessage + 1, 2))
+				if(!str_comp_nocase_num("w ", pMsg->m_pMessage + 1, 2))
 				{
 					int recipientNameLength;
 					const char *recipientName;
@@ -1012,7 +1039,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 				
 				// by id
-				else if(!str_comp_nocase_num("ti ", pMsg->m_pMessage + 1, 3))
+				else if(!str_comp_nocase_num("wi ", pMsg->m_pMessage + 1, 3))
 				{
 					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 4);
 					// check if int given
@@ -1020,14 +1047,14 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					{
 						if(*c < '0' || '9' < *c)
 						{
-							SendChatTarget(ClientID, "No id given, syntax is: /ti id message.");
+							SendChatTarget(ClientID, "No id given, syntax is: /wi <id> message.");
 							return;
 						}
 					}
 					int i = str_toint(recipientStart);
 					if(i >= MAX_CLIENTS)
 					{
-						SendChatTarget(ClientID, "Invalid id, syntax is: /ti id message.");
+						SendChatTarget(ClientID, "Invalid id, syntax is: /wi <id> message.");
 						return;
 					}
 					if(m_apPlayers[i])
@@ -1051,7 +1078,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						// send to sender and recipient
 						str_format(msg, len * sizeof(char), msgForm, Server()->ClientName(recipient), msgStart);
 						M.m_pMessage = msg;
+						if(recipient != ClientID){
 						Server()->SendPackMsg(&M, MSGFLAG_VITAL, ClientID);
+						}
 						Server()->SendPackMsg(&M, MSGFLAG_VITAL, recipient);
 						// tidy up
 						free(msg);
@@ -1062,6 +1091,136 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					SendChatTarget(ClientID, "Could not deliver private message. Player not found.");
 				}
 			}
+
+
+			/**whispering / conversation by jxsl13*/
+
+			// tell / PM someone privately
+			else if(!str_comp_nocase_num("c ", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("ci ", pMsg->m_pMessage + 1, 3) 
+				|| !str_comp_nocase_num("c", pMsg->m_pMessage + 1, 2) 
+				|| !str_comp_nocase_num("ci", pMsg->m_pMessage + 1, 3)
+				)
+			{
+				const char *recipientStart;
+				
+				
+
+				if(!str_comp_nocase_num("c", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("ci", pMsg->m_pMessage + 1, 3))
+				{	
+					if(m_apPlayers[ClientID]->m_Recipient_ID >=0){
+					m_apPlayers[ClientID]->m_Recipient_ID = -1;
+					
+					SendChatTarget(ClientID, "You left the conversation.");
+					}
+					else{
+					SendChatTarget(ClientID, "You are in no conversation.");
+					}
+					return;
+					
+				}
+				
+				//look for the space after the playername
+				// by name
+				if(!str_comp_nocase_num("c ", pMsg->m_pMessage + 1, 2))
+				{
+					int recipientNameLength;
+					const char *recipientName;
+					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 3);
+					// check _all_ players (there might be partly identical names)
+					for(int i = 0; i < MAX_CLIENTS; ++i)
+					{
+						if(m_apPlayers[i]
+							&& (recipientName = Server()->ClientName(i))
+							&& (recipientNameLength = str_length(recipientName))
+							&& !str_comp_num(recipientName, recipientStart, recipientNameLength)
+							&& recipientStart[recipientNameLength] == ' '
+						)
+						{
+							m_apPlayers[ClientID]->m_Recipient_ID = i;
+							if(m_apPlayers[ClientID]->m_Recipient_ID >= 0)
+							{
+					
+								// prepare message
+						
+								char *msg = (char*)malloc((52 + MAX_NAME_LENGTH) * sizeof(char));
+									
+								// send to sender and recipient
+								str_format(msg, (52 + MAX_NAME_LENGTH) * sizeof(char), "Now talking to '%s', use /c to stop your conversation.", Server()->ClientName(m_apPlayers[ClientID]->m_Recipient_ID));
+								
+								SendChatTarget(ClientID, msg);
+								
+								free(msg);
+								return;
+
+							}
+							else {
+								SendChatTarget(ClientID, "Could not deliver private message. More than one player could be addressed.");
+								return;
+							}
+							
+						}
+					}
+				}
+				//crappy ci command sollution
+				// by id
+				else if(!str_comp_nocase_num("ci ", pMsg->m_pMessage + 1, 3))
+				{
+					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 3);
+					// check if int given
+					for(const char *c = recipientStart; *c <= 1; ++c)
+					{
+						if(*c < '0' || '9' < *c)
+						{
+							SendChatTarget(ClientID, " No id given, syntax is: /ci <id>");
+							return;
+						}
+					}
+
+
+					int i = str_toint(recipientStart);
+					if(i >= MAX_CLIENTS)
+					{
+						SendChatTarget(ClientID, "Invalid id, syntax is: /ci <id>");
+						return;
+					}
+					if(m_apPlayers[i])
+					{
+						m_apPlayers[ClientID]->m_Recipient_ID = i;
+						if(m_apPlayers[ClientID]->m_Recipient_ID >= 0)
+							{
+					
+								// prepare message
+						
+								char *msg = (char*)malloc((52 + MAX_NAME_LENGTH) * sizeof(char));
+									
+								// send to sender and recipient
+								str_format(msg, (52 + MAX_NAME_LENGTH) * sizeof(char), "Now talking to '%s', use /c to stop your conversation.", Server()->ClientName(m_apPlayers[ClientID]->m_Recipient_ID));
+								
+								SendChatTarget(ClientID, msg);
+								
+								free(msg);
+								return;
+
+							}
+							else {
+								SendChatTarget(ClientID, "Could not deliver private message.");
+								return;
+							}	
+					}
+					else{
+								SendChatTarget(ClientID, "No such player ID.");
+								return;
+					}
+				}
+			}
+
+
+
+			// whispering by jxsl13
+
+
+
+
 			
 			/* ranking system */
 			else if(RankingEnabled() && (!str_comp_nocase("top", pMsg->m_pMessage + 1) || !str_comp_nocase("top5", pMsg->m_pMessage + 1)))
@@ -1104,7 +1263,40 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			// send to chat
 			if(MuteValidation(pPlayer))
-				SendChat(ClientID, Team, pMsg->m_pMessage);
+			{
+					if(m_apPlayers[ClientID]->m_Recipient_ID >= 0)
+				{
+
+					
+						// prepare message
+						const char *msgStart;
+
+						msgStart = str_skip_whitespaces((char*)pMsg->m_pMessage);
+						const char *msgForm = "/PM -> %s / %s";
+						int len = 32 + MAX_NAME_LENGTH + str_length(msgStart);
+						char *msg = (char*)malloc(len * sizeof(char));
+						CNetMsg_Sv_Chat M;
+						M.m_Team = 0;
+						M.m_ClientID = ClientID;
+						// send to sender and recipient
+						str_format(msg, len * sizeof(char), msgForm, Server()->ClientName(m_apPlayers[ClientID]->m_Recipient_ID), msgStart);
+						M.m_pMessage = msg;
+
+						if(ClientID != m_apPlayers[ClientID]->m_Recipient_ID){
+						Server()->SendPackMsg(&M, MSGFLAG_VITAL, ClientID);
+						}
+
+						Server()->SendPackMsg(&M, MSGFLAG_VITAL, m_apPlayers[ClientID]->m_Recipient_ID);
+						// tidy up
+						free(msg);
+					
+				}
+				else
+				{
+						SendChat(ClientID, Team, pMsg->m_pMessage);
+				}
+				
+			}
 		}
 		/* end zCatch */
 	}
