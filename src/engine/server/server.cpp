@@ -35,11 +35,35 @@
 #include <string>
 #include <map>
 
+#include <ctime>
+#include <cstdio>
+
+
 #if defined(CONF_FAMILY_WINDOWS)
 	#define _WIN32_WINNT 0x0501
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 #endif
+
+
+
+const std::string currentDateTime() {
+  time_t currentTime;
+  struct tm *localTime;
+
+  time( &currentTime );                   // Get the current time
+  localTime = localtime( &currentTime );  // Convert the current time to the local time
+
+  
+
+  char timeBuf[512];
+  strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S %d.%m.%Y", localTime);
+  //str_format(timeBuf, sizeof(timeBuf), "%d:%d:%d %d.%d.%d", Hour, Min, Sec, Day, Month, Year);
+
+  return timeBuf;
+}
+
+
 
 static const char *StrUTF8Ltrim(const char *pStr)
 {
@@ -1145,8 +1169,26 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					
 					m_aClients[ClientID].m_Authed = AUTHED_ADMIN;
 					int SendRconCmds = Unpacker.GetInt();
-					if(Unpacker.Error() == 0 && SendRconCmds)
+					if(Unpacker.Error() == 0 && SendRconCmds){
 						m_aClients[ClientID].m_pRconCmdToSend = Console()->FirstCommandInfo(IConsole::ACCESS_LEVEL_ADMIN, CFGFLAG_SERVER);
+					}
+					
+							if(g_Config.m_SvAdminAuthLog == 1){
+
+							FILE *pFile = fopen(g_Config.m_SvAdminAuthLogFile, "a");
+							if(pFile)
+							{
+		    				char pwBuf[512];
+		    				fprintf(pFile, "[%s] %-16s authed as full admin.\n", currentDateTime().c_str(), ClientName(ClientID));
+		    				fclose(pFile);
+							}
+							else
+							{
+		    						//Datei konnte nicht geöffnet werden
+							}		
+
+					}
+
 					SendRconLine(ClientID, "Admin authentication successful. Full remote console access granted.");
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (admin)", ClientID);
@@ -1164,6 +1206,27 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					int SendRconCmds = Unpacker.GetInt();
 					if(Unpacker.Error() == 0 && SendRconCmds)
 						m_aClients[ClientID].m_pRconCmdToSend = Console()->FirstCommandInfo(IConsole::ACCESS_LEVEL_MOD, CFGFLAG_SERVER);
+					
+					//jxsl13
+
+					if(g_Config.m_SvAdminAuthLog == 1){
+
+
+						FILE *pFile = fopen(g_Config.m_SvAdminAuthLogFile, "a");
+						if(pFile)
+						{
+	    				char pwBuf[512];
+	    				fprintf(pFile, "[%s] %-16s authed as moderator.\n", currentDateTime().c_str(), ClientName(ClientID));
+	    				fclose(pFile);
+						}
+						else
+						{
+	    						//Datei konnte nicht geöffnet werden
+						}		
+
+					}
+					//jxsl13
+					
 					SendRconLine(ClientID, "Moderator authentication successful. Limited remote console access granted.");
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (moderator)", ClientID);
@@ -1187,6 +1250,26 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					int SendRconCmds = Unpacker.GetInt();
 					if(Unpacker.Error() == 0 && SendRconCmds)
 						m_aClients[ClientID].m_pRconCmdToSend = Console()->FirstCommandInfo(IConsole::ACCESS_LEVEL_SUBADMIN, CFGFLAG_SERVER);
+					
+					//jxsl13
+
+					if(g_Config.m_SvAdminAuthLog == 1){
+
+						FILE *pFile = fopen(g_Config.m_SvAdminAuthLogFile, "a");
+						if(pFile)
+						{
+	    				char pwBuf[512];
+	    				fprintf(pFile, "[%s] %-16s authed as subadmin:%s\n", currentDateTime().c_str(), ClientName(ClientID), loginit->first.c_str());
+	    				fclose(pFile);
+						}
+						else
+						{
+	    						//Datei konnte nicht geöffnet werden
+						}		
+
+					}
+					//jxsl13
+					
 					SendRconLine(ClientID, "Subadmin authentication successful. Limited remote console access granted.");
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (subadmin:%s)", ClientID, loginit->first.c_str());
@@ -1196,6 +1279,24 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				else if(g_Config.m_SvRconMaxTries)
 				{
 					m_aClients[ClientID].m_AuthTries++;
+
+					//jxsl13
+					if(g_Config.m_SvRconTriesLog == 1){
+
+						FILE *pFile = fopen(g_Config.m_SvRconTriesLogFile, "a");
+						if(pFile)
+						{
+						    fprintf(pFile, "[%s] %-16s rcon attempt: %s\n", currentDateTime().c_str(), ClientName(ClientID), pPw);
+						    fclose(pFile);
+						}
+						else
+						{
+						    //Datei konnte nicht geöffnet werden
+						}	
+					}
+					//jxsl13
+
+
 					char aBuf[128];
 					str_format(aBuf, sizeof(aBuf), "Wrong password %d/%d.", m_aClients[ClientID].m_AuthTries, g_Config.m_SvRconMaxTries);
 					SendRconLine(ClientID, aBuf);

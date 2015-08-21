@@ -84,7 +84,7 @@ void CGameController_zCatch::Tick()
 	{
 		EndRound();
 	}
-	if ((m_OldColor != g_Config.m_SvGameColor | m_OldReleaseGame != g_Config.m_SvReleaseGame) && !GameServer()->m_World.m_Paused)
+	if (((m_OldColor != g_Config.m_SvGameColor) | (m_OldReleaseGame != g_Config.m_SvReleaseGame)) && !GameServer()->m_World.m_Paused)
 	{
 		m_OldColor = g_Config.m_SvGameColor;
 		m_OldReleaseGame = g_Config.m_SvReleaseGame;
