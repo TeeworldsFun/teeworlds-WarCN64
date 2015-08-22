@@ -321,7 +321,7 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 		}
 	}
 
-	int CID = -1;
+	/*int CID = -1;
 	if(StrAllnum(pStr))
 		CID = str_toint(pStr);
 	else
@@ -334,7 +334,7 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 					CID = i;
 					break;
 				}
-	}
+	}*/
 
 	if(StrAllnum(pStr))
 	{
@@ -964,11 +964,30 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				}
 
 				const char *pPassword = Unpacker.GetString(CUnpacker::SANITIZE_CC);
+
+
+				if (!g_Config.m_SvPwAntispoof)
+				{
 				if(g_Config.m_Password[0] != 0 && str_comp(g_Config.m_Password, pPassword) != 0)
 				{
 					// wrong password
 					m_NetServer.Drop(ClientID, "Wrong password");
 					return;
+					}
+				}
+				else
+				{
+					// anti spoof
+					char aToken[5];
+					m_NetServer.TokenToBaseString(m_NetServer.GetToken(*m_NetServer.ClientAddr(ClientID)), aToken);
+
+					// validate token
+					if(str_comp(aToken, pPassword) != 0)
+					{
+						// wrong password
+						m_NetServer.Drop(ClientID, "Wrong password");
+						return;
+					}
 				}
 
 				m_aClients[ClientID].m_State = CClient::STATE_CONNECTING;
@@ -1178,7 +1197,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 							FILE *pFile = fopen(g_Config.m_SvAdminAuthLogFile, "a");
 							if(pFile)
 							{
-		    				char pwBuf[512];
+		    				
 		    				fprintf(pFile, "[%s] %-16s authed as full admin.\n", currentDateTime().c_str(), ClientName(ClientID));
 		    				fclose(pFile);
 							}
@@ -1215,7 +1234,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 						FILE *pFile = fopen(g_Config.m_SvAdminAuthLogFile, "a");
 						if(pFile)
 						{
-	    				char pwBuf[512];
+	    				
 	    				fprintf(pFile, "[%s] %-16s authed as moderator.\n", currentDateTime().c_str(), ClientName(ClientID));
 	    				fclose(pFile);
 						}
@@ -1258,7 +1277,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 						FILE *pFile = fopen(g_Config.m_SvAdminAuthLogFile, "a");
 						if(pFile)
 						{
-	    				char pwBuf[512];
+	    				
 	    				fprintf(pFile, "[%s] %-16s authed as subadmin:%s\n", currentDateTime().c_str(), ClientName(ClientID), loginit->first.c_str());
 	    				fclose(pFile);
 						}
@@ -1375,8 +1394,23 @@ void CServer::SendServerInfo(const NETADDR *pAddr, int Token)
 	p.AddString(aBuf, 6);
 
 	p.AddString(GameServer()->Version(), 32);
+
+	char aName[256];
+
+	if (g_Config.m_SvPwAntispoof)
+	{
 	// send the alternative server name when a admin is online
+	char aToken[5];
+	m_NetServer.TokenToBaseString(m_NetServer.GetToken(*pAddr), aToken);
+
+	str_format(aName, sizeof(aName), "Password: %s - %s", aToken, (m_numLoggedInAdmins && str_length(g_Config.m_SvNameAdmin)) ? g_Config.m_SvNameAdmin : g_Config.m_SvName);
+
+	p.AddString(aName, 64);
+	}
+	else{
 	p.AddString((m_numLoggedInAdmins && str_length(g_Config.m_SvNameAdmin)) ? g_Config.m_SvNameAdmin : g_Config.m_SvName, 64);
+	}
+
 	p.AddString(GetMapName(), 32);
 
 	// gametype
@@ -2349,6 +2383,22 @@ int main(int argc, const char **argv) // ignore_convention
 		}
 	}
 #endif
+
+	//bool UseDefaultConfig = false;
+	for(int i = 1; i < argc; i++) // ignore_convention
+	{
+		if(str_comp("-d", argv[i]) == 0 || str_comp("--default", argv[i]) == 0) // ignore_convention
+		{
+			//UseDefaultConfig = true;
+			break;
+		}
+	}
+
+	if(secure_random_init() != 0)
+	{
+		dbg_msg("secure", "could not initialize secure RNG");
+		return -1;
+	}
 
 	CServer *pServer = CreateServer();
 	IKernel *pKernel = IKernel::Create();

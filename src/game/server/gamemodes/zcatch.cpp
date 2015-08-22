@@ -278,7 +278,7 @@ void CGameController_zCatch::StartRound()
 	}
 
 	//jxsl13
-	if (m_OldColor != g_Config.m_SvGameColor | m_OldReleaseGame != g_Config.m_SvReleaseGame)
+	if ((m_OldColor != g_Config.m_SvGameColor) | (m_OldReleaseGame != g_Config.m_SvReleaseGame))
 	{
 		m_OldColor = g_Config.m_SvGameColor;
 		m_OldReleaseGame = g_Config.m_SvReleaseGame;

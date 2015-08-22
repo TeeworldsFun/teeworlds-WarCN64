@@ -202,7 +202,7 @@ function build(settings)
 	-- build the small libraries
 	wavpack = Compile(settings, Collect("src/engine/external/wavpack/*.c"))
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
-
+	md5 = Compile(settings, Collect("src/engine/external/md5/*.c"))
 	-- build sqlite
 	sqlite = Compile(settings, Collect("src/engine/external/sqlite/sqlite3.c"))
 
@@ -273,7 +273,7 @@ function build(settings)
 		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "zcatch_srv", engine, server,
-		game_shared, game_server, zlib, sqlite, server_link_other)
+		game_shared, game_server, zlib, sqlite, md5, server_link_other)
 
 	serverlaunch = {}
 	if platform == "macosx" then
