@@ -74,7 +74,7 @@ CGameContext::~CGameContext()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		delete m_apPlayers[i];
 	
-	if (!m_Resetting)
+	if(!m_Resetting)
 	{
 		delete m_pVoteOptionHeap;
 		
@@ -577,7 +577,7 @@ void CGameContext::OnTick()
 		{
 		
 			// abort if player is not ingame or already detected as a bot
-			if(!(p = m_apPlayers[i]) || p->m_IsAimBot || !(ci = GetPlayerChar(i)))
+			if(!(p = m_apPlayers[i]) || (p->m_IsAimBot  && p->m_IsAimBot+Server()->TickSpeed()*30 > Server()->Tick()) || !(ci = GetPlayerChar(i)))
 				continue;
 			
 			// check against every other player
@@ -654,6 +654,16 @@ void CGameContext::OnTick()
 				for(int j = 0; j < MAX_CLIENTS; ++j)
 					if(Server()->IsAuthed(j))
 						SendChatTarget(j, aBuf);
+
+				//Reset informations for better detection
+				p->m_AimBotIndex = 0;
+				p->m_AimBotRange = 0;
+				p->m_AimBotLastDetection = 0;
+				p->m_AimBotTargetSpeed = .0;
+				p->m_CurrentTarget.x = 0;
+				p->m_CurrentTarget.y = 0;
+				p->m_LastTarget.x = 0;
+				p->m_LastTarget.y = 0;
 			}
 			
 			// reduce once every seconds (tolerance)
@@ -905,7 +915,53 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		/* begin zCatch*/
 		if(!str_comp_num("/", pMsg->m_pMessage, 1))
 		{
-			if(!str_comp_nocase("info", pMsg->m_pMessage + 1))
+			
+
+		
+			if (str_comp_nocase_num(pMsg->m_pMessage+1, "w ", 2) == 0)
+			{
+
+				char pWhisperMsg[256];
+				str_copy(pWhisperMsg, pMsg->m_pMessage + 3, 256);
+				Whisper(pPlayer->GetCID(), pWhisperMsg);
+
+			}
+			else if (str_comp_nocase_num(pMsg->m_pMessage+1, "whisper ", 8) == 0)
+			{
+
+				char pWhisperMsg[256];
+				str_copy(pWhisperMsg, pMsg->m_pMessage + 9, 256);
+				Whisper(pPlayer->GetCID(), pWhisperMsg);
+				
+			}
+			else if (str_comp_nocase_num(pMsg->m_pMessage+1, "c ", 2) == 0)
+			{
+
+				char pWhisperMsg[256];
+				str_copy(pWhisperMsg, pMsg->m_pMessage + 3, 256);
+				Converse(pPlayer->GetCID(), pWhisperMsg);
+
+			}
+			else if (str_comp_nocase_num(pMsg->m_pMessage+1, "converse ", 9) == 0)
+			{
+
+				char pWhisperMsg[256];
+				str_copy(pWhisperMsg, pMsg->m_pMessage + 10, 256);
+				Converse(pPlayer->GetCID(), pWhisperMsg);
+			}
+			else if(!str_comp_nocase("w", pMsg->m_pMessage + 1) || !str_comp_nocase("whisper", pMsg->m_pMessage + 1)
+					|| !str_comp_nocase("c", pMsg->m_pMessage + 1) || !str_comp_nocase("converse", pMsg->m_pMessage + 1)){
+
+
+				char aBuf[128];
+				str_format(aBuf, sizeof(aBuf), "Type /help to see how use this command.");
+				SendChatTarget(ClientID, aBuf);
+			}
+
+		
+
+
+			else if(!str_comp_nocase("info", pMsg->m_pMessage + 1))
 			{
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision. See /help.", ZCATCH_VERSION);
@@ -927,10 +983,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			else if(!str_comp_nocase("help", pMsg->m_pMessage + 1))
 			{
 				SendChatTarget(ClientID, "--- Help topics ---");
-				SendChatTarget(ClientID, "/help 1: zCatch/TeeVi");
-				SendChatTarget(ClientID, "/help 2: releasing");
-				SendChatTarget(ClientID, "/help 3: writing PMs");
-				SendChatTarget(ClientID, "/help 4: ranking system");
+				SendChatTarget(ClientID, "/help 1: zCatch");
+				SendChatTarget(ClientID, "/help 2: Releasing");
+				SendChatTarget(ClientID, "/help 3: Writing Private Messages");
+				SendChatTarget(ClientID, "/help 4: Ranking system");
 			}
 			else if(!str_comp_nocase("help 1", pMsg->m_pMessage + 1))
 			{
@@ -942,17 +998,17 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			else if(!str_comp_nocase("help 2", pMsg->m_pMessage + 1))
 			{
 				SendChatTarget(ClientID, "--- Help 2 / 4 ---");
-				SendChatTarget(ClientID, "On suicide via console the last victim is released instead. You die if there is noone to release. The console command for suicide is 'kill'.");
+				SendChatTarget(ClientID, "On suicide via console the last victim is released instead.");
+				SendChatTarget(ClientID, "You die if there is nobody to release. The console command for suicide is 'kill'.");
+
 			}
 			else if(!str_comp_nocase("help 3", pMsg->m_pMessage + 1))
 			{
 				SendChatTarget(ClientID, "--- Help 3 / 4 ---");
 				SendChatTarget(ClientID, "You can write private messages:");
-				SendChatTarget(ClientID, "/w <name> <msg>: write PM to <name>");
-				SendChatTarget(ClientID, "/wi <id> <msg>: write PM via ID");
-				SendChatTarget(ClientID, "/c <name>: start conversation with <name>");
-				SendChatTarget(ClientID, "/ci <id>: start conversation with <id>");
-				SendChatTarget(ClientID, "/c : End conversation.");
+				SendChatTarget(ClientID, "/whisper <name> <msg>");
+				SendChatTarget(ClientID, "/converse <id> <msg>");
+
 
 
 
@@ -962,7 +1018,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				if (RankingEnabled())
 				{
 					SendChatTarget(ClientID, "--- Help 4 / 4 ---");
-					SendChatTarget(ClientID, "The ranking system saves various stats about players. The stats are updated at the end of a round and on leaving the server.");
+					SendChatTarget(ClientID, "The ranking system saves various stats about players.");
+					SendChatTarget(ClientID, "The stats are updated at the end of a round and on leaving the server.");
 					SendChatTarget(ClientID, "/top [<category>]: display top 5 players");
 					SendChatTarget(ClientID, "/rank [<player>]: display own/players's rank");
 				}
@@ -1005,222 +1062,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					SendChatTarget(ClientID, "You caught no one since your last death.");
 				}
 			}
-			// tell / PM someone privately
-			else if(!str_comp_nocase_num("w ", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("wi ", pMsg->m_pMessage + 1, 3))
-			{
-				const char *recipientStart, *msgStart;
-				int recipient = -1;
-				
-				// by name
-				if(!str_comp_nocase_num("w ", pMsg->m_pMessage + 1, 2))
-				{
-					int recipientNameLength;
-					const char *recipientName;
-					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 3);
-					// check _all_ players (there might be partly identical names)
-					for(int i = 0; i < MAX_CLIENTS; ++i)
-					{
-						if(m_apPlayers[i]
-							&& (recipientName = Server()->ClientName(i))
-							&& (recipientNameLength = str_length(recipientName))
-							&& !str_comp_num(recipientName, recipientStart, recipientNameLength)
-							&& recipientStart[recipientNameLength] == ' '
-						)
-						{
-							if(recipient >= 0)
-							{
-								SendChatTarget(ClientID, "Could not deliver private message. More than one player could be addressed.");
-								return;
-							}
-							msgStart = recipientStart + recipientNameLength + 1;
-							recipient = i;
-						}
-					}
-				}
-				
-				// by id
-				else if(!str_comp_nocase_num("wi ", pMsg->m_pMessage + 1, 3))
-				{
-					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 4);
-					// check if int given
-					for(const char *c = recipientStart; *c != ' '; ++c)
-					{
-						if(*c < '0' || '9' < *c)
-						{
-							SendChatTarget(ClientID, "No id given, syntax is: /wi <id> message.");
-							return;
-						}
-					}
-					int i = str_toint(recipientStart);
-					if(i >= MAX_CLIENTS)
-					{
-						SendChatTarget(ClientID, "Invalid id, syntax is: /wi <id> message.");
-						return;
-					}
-					if(m_apPlayers[i])
-					{
-						recipient = i;
-						msgStart = str_skip_whitespaces(str_skip_to_whitespace((char*)recipientStart));
-					}
-				}
-				
-				if(recipient >= 0)
-				{
-					if(MuteValidation(pPlayer))
-					{
-						// prepare message
-						const char *msgForm = "/PM -> %s / %s";
-						int len = 32 + MAX_NAME_LENGTH + str_length(msgStart);
-						char *msg = (char*)malloc(len * sizeof(char));
-						CNetMsg_Sv_Chat M;
-						M.m_Team = 0;
-						M.m_ClientID = ClientID;
-						// send to sender and recipient
-						str_format(msg, len * sizeof(char), msgForm, Server()->ClientName(recipient), msgStart);
-						M.m_pMessage = msg;
-						if(recipient != ClientID){
-						Server()->SendPackMsg(&M, MSGFLAG_VITAL, ClientID);
-						}
-						Server()->SendPackMsg(&M, MSGFLAG_VITAL, recipient);
-						// tidy up
-						free(msg);
-					}
-				}
-				else
-				{
-					SendChatTarget(ClientID, "Could not deliver private message. Player not found.");
-				}
-			}
-
-
-			/**whispering / conversation by jxsl13*/
-
-			// tell / PM someone privately
-			else if(!str_comp_nocase_num("c ", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("ci ", pMsg->m_pMessage + 1, 3) 
-				|| !str_comp_nocase_num("c", pMsg->m_pMessage + 1, 2) 
-				|| !str_comp_nocase_num("ci", pMsg->m_pMessage + 1, 3)
-				)
-			{
-				const char *recipientStart;
-				
-				
-
-				if(!str_comp_nocase_num("c", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("ci", pMsg->m_pMessage + 1, 3))
-				{	
-					if(m_apPlayers[ClientID]->m_Recipient_ID >=0){
-					m_apPlayers[ClientID]->m_Recipient_ID = -1;
-					
-					SendChatTarget(ClientID, "You left the conversation.");
-					}
-					else{
-					SendChatTarget(ClientID, "You are in no conversation.");
-					}
-					return;
-					
-				}
-				
-				//look for the space after the playername
-				// by name
-				if(!str_comp_nocase_num("c ", pMsg->m_pMessage + 1, 2))
-				{
-					int recipientNameLength;
-					const char *recipientName;
-					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 3);
-					// check _all_ players (there might be partly identical names)
-					for(int i = 0; i < MAX_CLIENTS; ++i)
-					{
-						if(m_apPlayers[i]
-							&& (recipientName = Server()->ClientName(i))
-							&& (recipientNameLength = str_length(recipientName))
-							&& !str_comp_num(recipientName, recipientStart, recipientNameLength)
-							&& recipientStart[recipientNameLength] == ' '
-						)
-						{
-							m_apPlayers[ClientID]->m_Recipient_ID = i;
-							if(m_apPlayers[ClientID]->m_Recipient_ID >= 0)
-							{
-					
-								// prepare message
-						
-								char *msg = (char*)malloc((52 + MAX_NAME_LENGTH) * sizeof(char));
-									
-								// send to sender and recipient
-								str_format(msg, (52 + MAX_NAME_LENGTH) * sizeof(char), "Now talking to '%s', use /c to stop your conversation.", Server()->ClientName(m_apPlayers[ClientID]->m_Recipient_ID));
-								
-								SendChatTarget(ClientID, msg);
-								
-								free(msg);
-								return;
-
-							}
-							else {
-								SendChatTarget(ClientID, "Could not deliver private message. More than one player could be addressed.");
-								return;
-							}
-							
-						}
-					}
-				}
-				//crappy ci command sollution
-				// by id
-				else if(!str_comp_nocase_num("ci ", pMsg->m_pMessage + 1, 3))
-				{
-					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 3);
-					// check if int given
-					for(const char *c = recipientStart; *c <= 1; ++c)
-					{
-						if(*c < '0' || '9' < *c)
-						{
-							SendChatTarget(ClientID, " No id given, syntax is: /ci <id>");
-							return;
-						}
-					}
-
-
-					int i = str_toint(recipientStart);
-					if(i >= MAX_CLIENTS)
-					{
-						SendChatTarget(ClientID, "Invalid id, syntax is: /ci <id>");
-						return;
-					}
-					if(m_apPlayers[i])
-					{
-						m_apPlayers[ClientID]->m_Recipient_ID = i;
-						if(m_apPlayers[ClientID]->m_Recipient_ID >= 0)
-							{
-					
-								// prepare message
-						
-								char *msg = (char*)malloc((52 + MAX_NAME_LENGTH) * sizeof(char));
-									
-								// send to sender and recipient
-								str_format(msg, (52 + MAX_NAME_LENGTH) * sizeof(char), "Now talking to '%s', use /c to stop your conversation.", Server()->ClientName(m_apPlayers[ClientID]->m_Recipient_ID));
-								
-								SendChatTarget(ClientID, msg);
-								
-								free(msg);
-								return;
-
-							}
-							else {
-								SendChatTarget(ClientID, "Could not deliver private message.");
-								return;
-							}	
-					}
-					else{
-								SendChatTarget(ClientID, "No such player ID.");
-								return;
-					}
-				}
-			}
-
-
-
-			// whispering by jxsl13
-
-
-
-
+			
 			
 			/* ranking system */
 			else if(RankingEnabled() && (!str_comp_nocase("top", pMsg->m_pMessage + 1) || !str_comp_nocase("top5", pMsg->m_pMessage + 1)))
@@ -1263,39 +1105,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			// send to chat
 			if(MuteValidation(pPlayer))
-			{
-					if(m_apPlayers[ClientID]->m_Recipient_ID >= 0)
-				{
-
-					
-						// prepare message
-						const char *msgStart;
-
-						msgStart = str_skip_whitespaces((char*)pMsg->m_pMessage);
-						const char *msgForm = "/PM -> %s / %s";
-						int len = 32 + MAX_NAME_LENGTH + str_length(msgStart);
-						char *msg = (char*)malloc(len * sizeof(char));
-						CNetMsg_Sv_Chat M;
-						M.m_Team = 0;
-						M.m_ClientID = ClientID;
-						// send to sender and recipient
-						str_format(msg, len * sizeof(char), msgForm, Server()->ClientName(m_apPlayers[ClientID]->m_Recipient_ID), msgStart);
-						M.m_pMessage = msg;
-
-						if(ClientID != m_apPlayers[ClientID]->m_Recipient_ID){
-						Server()->SendPackMsg(&M, MSGFLAG_VITAL, ClientID);
-						}
-
-						Server()->SendPackMsg(&M, MSGFLAG_VITAL, m_apPlayers[ClientID]->m_Recipient_ID);
-						// tidy up
-						free(msg);
-					
-				}
-				else
-				{
-						SendChat(ClientID, Team, pMsg->m_pMessage);
-				}
-				
+			{		
+				SendChat(ClientID, Team, pMsg->m_pMessage);		
 			}
 		}
 		/* end zCatch */
@@ -1307,7 +1118,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 		int64 Now = Server()->Tick();
 		pPlayer->m_LastVoteTry = Now;
-		// zCatch - Only people which are explicit in spectators can't vote!
+		// zCatch - Only People who are explicit in Spectators can't vote!
 		if(pPlayer->m_SpecExplicit) //zCatch
 		{
 			SendChatTarget(ClientID, "Spectators aren't allowed to start a vote.");
@@ -1460,6 +1271,16 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			pPlayer->m_VotePos = m_VotePos = 1;
 			m_VoteCreator = ClientID;
 			pPlayer->m_LastVoteCall = Now;
+		}
+	}
+	else if (MsgID == NETMSGTYPE_CL_ISDDNET)
+			{
+				//int Version = pUnpacker->GetInt();
+
+				if (pUnpacker->Error())
+				{
+					if (pPlayer->m_ClientVersion < VERSION_DDRACE)
+						pPlayer->m_ClientVersion = VERSION_DDRACE;
 		}
 	}
 	else if(MsgID == NETMSGTYPE_CL_VOTE)
@@ -1673,6 +1494,43 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		pPlayer->m_LastEmote = Server()->Tick();
 
 		SendEmoticon(ClientID, pMsg->m_Emoticon);
+		CCharacter* pChr = pPlayer->GetCharacter();
+					if(pChr)
+					{
+						switch(pMsg->m_Emoticon)
+						{
+						case EMOTICON_EXCLAMATION:
+						case EMOTICON_GHOST:
+						case EMOTICON_QUESTION:
+						case EMOTICON_WTF:
+								pChr->SetEmoteType(EMOTE_SURPRISE);
+								break;
+						case EMOTICON_DOTDOT:
+						case EMOTICON_DROP:
+						case EMOTICON_ZZZ:
+								pChr->SetEmoteType(EMOTE_BLINK);
+								break;
+						case EMOTICON_EYES:
+						case EMOTICON_HEARTS:
+						case EMOTICON_MUSIC:
+								pChr->SetEmoteType(EMOTE_HAPPY);
+								break;
+						case EMOTICON_OOP:
+						case EMOTICON_SORRY:
+						case EMOTICON_SUSHI:
+								pChr->SetEmoteType(EMOTE_PAIN);
+								break;
+						case EMOTICON_DEVILTEE:
+						case EMOTICON_SPLATTEE:
+						case EMOTICON_ZOMG:
+								pChr->SetEmoteType(EMOTE_ANGRY);
+								break;
+							default:
+								pChr->SetEmoteType(EMOTE_NORMAL);
+								break;
+	}
+						pChr->SetEmoteStop(Server()->Tick() + 2 * Server()->TickSpeed());
+					}
 	}
 	else if (MsgID == NETMSGTYPE_CL_KILL && !m_World.m_Paused)
 	{
@@ -1696,19 +1554,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			// console release log
 			str_format(aBuf, sizeof(aBuf), "release killer='%d:%s' victim='%d:%s'" , ClientID, Server()->ClientName(ClientID), lastVictim, Server()->ClientName(lastVictim));
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
-
-			// Send release information to the same killer's victims
-			// Message flood risk on first killed players!
-				//if(pPlayer->m_zCatchNumVictims > 0)
-				//{
-				//	CPlayer::CZCatchVictim *v = pPlayer->m_ZCatchVictims;
-				//	str_format(aBuf, sizeof(aBuf), "'%s' released '%s'", Server()->ClientName(ClientID), Server()->ClientName(lastVictim));
-				//	while(v != NULL)
-				//	{
-				//		SendChatTarget(v->ClientID, aBuf);
-				//		v = v->prev;
-				//	}
-				//}
 			
 
 			return;
@@ -2484,6 +2329,191 @@ bool CGameContext::IsClientAimBot(int ClientID)
 	return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 }
 
+
+bool CheckClientID2(int ClientID)
+{
+	dbg_assert(ClientID >= 0 || ClientID < MAX_CLIENTS,
+			"The Client ID is wrong");
+	if (ClientID < 0 || ClientID >= MAX_CLIENTS)
+		return false;
+	return true;
+}
+
+void CGameContext::Whisper(int ClientID, char *pStr)
+{
+	char *pName;
+	char *pMessage;
+	int Error = 0;
+	CPlayer *pPlayer = m_apPlayers[ClientID];
+
+	pStr = str_skip_whitespaces(pStr);
+
+	int Victim;
+
+	// add token
+	if(*pStr == '"')
+	{
+		pStr++;
+
+		pName = pStr; // we might have to process escape data
+		while(1)
+		{
+			if(pStr[0] == '"')
+				break;
+			else if(pStr[0] == '\\')
+			{
+				if(pStr[1] == '\\')
+					pStr++; // skip due to escape
+				else if(pStr[1] == '"')
+					pStr++; // skip due to escape
+			}
+			else if(pStr[0] == 0)
+				Error = 1;
+
+			pStr++;
+		}
+
+		// write null termination
+		*pStr = 0;
+		pStr++;
+
+		for(Victim = 0; Victim < MAX_CLIENTS; Victim++)
+			if (str_comp(pName, Server()->ClientName(Victim)) == 0)
+				break;
+
+	}
+	else
+	{
+		pName = pStr;
+		while(1)
+		{
+			if(pStr[0] == 0)
+			{
+				Error = 1;
+				break;
+			}
+			if(pStr[0] == ' ')
+			{
+				pStr[0] = 0;
+				for(Victim = 0; Victim < MAX_CLIENTS; Victim++)
+					if (str_comp(pName, Server()->ClientName(Victim)) == 0)
+						break;
+
+				pStr[0] = ' ';
+
+				if (Victim < MAX_CLIENTS)
+					break;
+			}
+			pStr++;
+		}
+	}
+
+	if(pStr[0] != ' ')
+	{
+		Error = 1;
+	}
+
+	*pStr = 0;
+	pStr++;
+
+	pMessage = pStr;
+
+	char aBuf[256];
+
+	if (Error)
+	{
+		str_format(aBuf, sizeof(aBuf), "Invalid whisper");
+		SendChatTarget(ClientID, aBuf);
+		return;
+	}
+
+	if (Victim >= MAX_CLIENTS || !CheckClientID2(Victim))
+	{
+		str_format(aBuf, sizeof(aBuf), "No player with name \"%s\" found", pName);
+		SendChatTarget(ClientID, aBuf);
+		return;
+	}
+
+	WhisperID(ClientID, Victim, pMessage);
+}
+
+void CGameContext::WhisperID(int ClientID, int VictimID, char *pMessage)
+{
+	CPlayer *pPlayer = m_apPlayers[ClientID];
+
+	if (!CheckClientID2(ClientID))
+		return;
+
+	if (!CheckClientID2(VictimID))
+		return;
+		if (m_apPlayers[ClientID])
+			m_apPlayers[ClientID]->m_LastWhisperTo = VictimID;
+
+		if(!MuteValidation(pPlayer))
+			{
+				return;
+			}		
+
+		char aBuf[256];
+		if(m_apPlayers[ClientID]->m_LastWhisperTo != ClientID){
+
+			
+
+			if (m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_ClientVersion >= VERSION_DDNET_WHISPER)
+			{
+				CNetMsg_Sv_Chat Msg;
+				Msg.m_Team = CHAT_WHISPER_SEND;
+				Msg.m_ClientID = VictimID;
+				Msg.m_pMessage = pMessage;
+				Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
+			}
+			else
+			{
+				str_format(aBuf, sizeof(aBuf), "[→ %s] %s", Server()->ClientName(VictimID), pMessage);
+				SendChatTarget(ClientID, aBuf);
+
+			}
+
+			
+			if (m_apPlayers[VictimID] && m_apPlayers[VictimID]->m_ClientVersion >= VERSION_DDNET_WHISPER)
+			{
+				
+				CNetMsg_Sv_Chat Msg2;
+				Msg2.m_Team = CHAT_WHISPER_RECV;
+				Msg2.m_ClientID = ClientID;
+				Msg2.m_pMessage = pMessage;
+				Server()->SendPackMsg(&Msg2, MSGFLAG_VITAL, VictimID);
+			}
+			else
+			{
+				str_format(aBuf, sizeof(aBuf), "[← %s] %s", Server()->ClientName(ClientID), pMessage);
+				SendChatTarget(VictimID, aBuf);
+
+			}
+		}else{
+			str_format(aBuf, sizeof(aBuf), "You can't talk to yourself.");
+			SendChatTarget(ClientID, aBuf);
+		}
+	
+}
+
+void CGameContext::Converse(int ClientID, char *pStr)
+{
+	CPlayer *pPlayer = m_apPlayers[ClientID];
+	if (!pPlayer)
+		return;
+
+	if (pPlayer->m_LastWhisperTo < 0)
+		SendChatTarget(ClientID, "You do not have an ongoing conversation. Whisper to someone to start one");
+	else
+	{
+		WhisperID(ClientID, pPlayer->m_LastWhisperTo, pStr);
+	}
+}
+
+
+
+
 /* wait given ms to lock ranking db, if time is negative wait until database is unlocked */
 bool CGameContext::LockRankingDb(int ms)
 {
@@ -2506,3 +2536,7 @@ const char *CGameContext::Version() { return GAME_VERSION; }
 const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
 
 IGameServer *CreateGameServer() { return new CGameContext; }
+
+
+
+

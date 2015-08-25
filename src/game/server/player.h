@@ -63,7 +63,8 @@ public:
 	int m_LastChangeInfo;
 	int m_LastEmote;
 	int m_LastKill;
-
+	int m_LastWhisperTo;
+	int m_ClientVersion;
 	// TODO: clean this up
 	struct
 	{
@@ -113,6 +114,8 @@ public:
 	int m_CampTick;
 	vec2 m_CampPos;
 	
+	int m_RespawnProtection;
+
 	// zCatch/TeeVi
 	enum
 	{

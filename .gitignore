@@ -30,3 +30,5 @@ banmaster*
 
 /ranking.db
 /ranking.db-journal
+
+*.txt

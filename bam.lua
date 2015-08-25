@@ -170,6 +170,7 @@ function build(settings)
 		if platform == "macosx" then
 			settings.link.frameworks:Add("Carbon")
 			settings.link.frameworks:Add("AppKit")
+			settings.link.libs:Add("dl")
 		else
 			settings.link.libs:Add("pthread")
 			settings.link.libs:Add("dl") -- for sqlite
@@ -203,6 +204,7 @@ function build(settings)
 	wavpack = Compile(settings, Collect("src/engine/external/wavpack/*.c"))
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
 	md5 = Compile(settings, Collect("src/engine/external/md5/*.c"))
+	jsonparser = Compile(settings, Collect("src/engine/external/json-parser/*.c"))
 	-- build sqlite
 	sqlite = Compile(settings, Collect("src/engine/external/sqlite/sqlite3.c"))
 
@@ -270,7 +272,7 @@ function build(settings)
 	-- build client, server, version server and master server
 	client_exe = Link(client_settings, "teeworlds", game_shared, game_client,
 		engine, client, game_editor, zlib, pnglite, wavpack,
-		client_link_other, client_osxlaunch)
+		client_link_other, client_osxlaunch, jsonparser, libwebsockets)
 
 	server_exe = Link(server_settings, "zcatch_srv", engine, server,
 		game_shared, game_server, zlib, sqlite, md5, server_link_other)

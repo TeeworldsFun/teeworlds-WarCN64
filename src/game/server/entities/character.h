@@ -76,6 +76,8 @@ public:
 	
 	// zCatch
 	int m_KillerLastDieTickBeforceFiring;
+	void SetEmoteType(int EmoteType) { m_EmoteType = EmoteType; };
+	void SetEmoteStop(int EmoteStop) { m_EmoteStop = EmoteStop; };
 	
 	// ranking system
 	bool m_TookBouncedWallshotDamage;
@@ -110,6 +112,7 @@ private:
 
 	int m_EmoteType;
 	int m_EmoteStop;
+
 
 	// last tick that the player took any action ie some input
 	int m_LastAction;

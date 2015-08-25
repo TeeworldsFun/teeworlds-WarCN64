@@ -25,6 +25,8 @@
 #include <engine/shared/packer.h>
 #include <engine/shared/protocol.h>
 #include <engine/shared/snapshot.h>
+#include <engine/shared/fifoconsole.h>
+#include <engine/shared/linereader.h>
 
 #include <mastersrv/mastersrv.h>
 
@@ -73,7 +75,8 @@ static const char *StrUTF8Ltrim(const char *pStr)
 		int Code = str_utf8_decode(&pStr);
 
 		// check if unicode is not empty
-		if(Code > 0x20 && Code != 0xA0 && Code != 0x034F && (Code < 0x2000 || Code > 0x200F) && (Code < 0x2028 || Code > 0x202F) &&
+		if(Code > 0x20 && Code != 0xA0 && Code != 0x034F && Code != 0x2800 &&
+			(Code < 0x2000 || Code > 0x200F) && (Code < 0x2028 || Code > 0x202F) &&
 			(Code < 0x205F || Code > 0x2064) && (Code < 0x206A || Code > 0x206F) && (Code < 0xFE00 || Code > 0xFE0F) &&
 			Code != 0xFEFF && (Code < 0xFFF9 || Code > 0xFFFC))
 		{
@@ -93,7 +96,8 @@ static void StrUTF8Rtrim(char *pStr)
 		int Code = str_utf8_decode(&p);
 
 		// check if unicode is not empty
-		if(Code > 0x20 && Code != 0xA0 && Code != 0x034F && (Code < 0x2000 || Code > 0x200F) && (Code < 0x2028 || Code > 0x202F) &&
+		if(Code > 0x20 && Code != 0xA0 && Code != 0x034F && Code != 0x2800 &&
+			(Code < 0x2000 || Code > 0x200F) && (Code < 0x2028 || Code > 0x202F) &&
 			(Code < 0x205F || Code > 0x2064) && (Code < 0x206A || Code > 0x206F) && (Code < 0xFE00 || Code > 0xFE0F) &&
 			Code != 0xFEFF && (Code < 0xFFF9 || Code > 0xFFFC))
 		{
@@ -966,7 +970,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				const char *pPassword = Unpacker.GetString(CUnpacker::SANITIZE_CC);
 
 
-				if (!g_Config.m_SvPwAntispoof)
+				if (!g_Config.m_SvPwAntiflood)
 				{
 				if(g_Config.m_Password[0] != 0 && str_comp(g_Config.m_Password, pPassword) != 0)
 				{
@@ -1000,12 +1004,12 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				return;
 
 			int Chunk = Unpacker.GetInt();
-			unsigned int ChunkSize = 1024-128;
-			unsigned int Offset = Chunk * ChunkSize;
+			int ChunkSize = 1024-128;
+			int Offset = Chunk * ChunkSize;
 			int Last = 0;
 
 			// drop faulty map data requests
-			if(Chunk < 0 || Offset > m_CurrentMapSize)
+			if(Chunk < 0 || Offset < 0 || Offset > m_CurrentMapSize)
 				return;
 
 			if(Offset+ChunkSize >= m_CurrentMapSize)
@@ -1397,7 +1401,7 @@ void CServer::SendServerInfo(const NETADDR *pAddr, int Token)
 
 	char aName[256];
 
-	if (g_Config.m_SvPwAntispoof)
+	if (g_Config.m_SvPwAntiflood)
 	{
 	// send the alternative server name when a admin is online
 	char aToken[5];
@@ -1718,7 +1722,16 @@ int CServer::Run()
 				ReportTime += time_freq()*ReportInterval;
 			}
 
-			// wait for incomming data
+			bool NonActive = true;
+
+			for(int c = 0; c < MAX_CLIENTS; c++)
+				if(m_aClients[c].m_State != CClient::STATE_EMPTY)
+					NonActive = false;
+
+			// wait for incoming data
+			if(NonActive && g_Config.m_SvShutdownWhenEmpty)
+				m_RunServer = false;
+			else
 			net_socket_read_wait(m_NetServer.Socket(), 5);
 		}
 	}
@@ -2094,6 +2107,82 @@ void CServer::UpdateInfoTexts()
 	m_InfoTextIntervalPause = m_InfoTextInterval % numMsg;
 }
 
+/*void CServer::ConAuthLog(IConsole::IResult *pResult, void *pUser)
+{
+
+	CServer* pThis = static_cast<CServer *>(pUser);
+	//const char *pFilename = g_Config.m_SvAdminAuthLogFile;
+	// make sure that this isn't being executed already
+	
+	
+
+	// exec the file
+	FILE *File = fopen();
+	char aBuf[256];
+
+	int size = 1024, pos;
+    int c;
+    char *pLine = (char *)malloc(size);
+
+    FILE *File = fopen(g_Config.m_SvAdminAuthLogFile, "a");
+    if(File) {
+      do { // read all lines in file
+        pos = 0;
+        do{ // read one line
+          c = fgetc(File);
+          if(c != EOF) pLine[pos++] = (char)c;
+          if(pos >= size - 1) { // increase buffer length - leave room for 0
+            size *=2;
+            pLine = (char*)realloc(pLine, size);
+          }
+        }while(c != EOF && c != '\n');
+        pLine[pos] = 0;
+        // line is now in buffer
+        str_format(aBuf, sizeof(aBuf), "%s", pLine);
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", aBuf);
+      } while(c != EOF); 
+      fclose(File);
+
+    }
+   	else
+	{
+		str_format(aBuf, sizeof(aBuf), "failed to open '%s'", g_Config.m_SvAdminAuthLogFile);
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", aBuf);
+	}
+	free(pLine);  
+	return;
+
+
+	char aBuf[256];
+	if(File)
+	{
+		char *pLine;
+		CLineReader lr;
+
+		str_format(aBuf, sizeof(aBuf), "Reading '%s'", g_Config.m_SvAdminAuthLogFile);
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", aBuf);
+		lr.Init(File);
+
+		while((pLine = lr.Get()))
+		{
+			str_format(aBuf, sizeof(aBuf), "%s", pLine);
+			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", aBuf);
+			//ExecuteLine(pLine);
+		}
+
+		io_close(File);
+	}
+	else
+	{
+		str_format(aBuf, sizeof(aBuf), "failed to open '%s'", g_Config.m_SvAdminAuthLogFile);
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", aBuf);
+	}
+}*/
+
+
+
+
+
 std::string CServer::GetNextInfoText()
 {
 	CInfoText *selectedText = NULL,
@@ -2314,6 +2403,10 @@ void CServer::RegisterCommands()
 	Console()->Register("status", "", CFGFLAG_SERVER, ConStatus, this, "List players");
 	Console()->Register("shutdown", "", CFGFLAG_SERVER, ConShutdown, this, "Shut down");
 	Console()->Register("logout", "", CFGFLAG_SERVER, ConLogout, this, "Logout of rcon");
+	
+	/*if(g_Config.m_SvAdminAuthLog == 1){
+	Console()->Register("authlog", "", CFGFLAG_SERVER, ConAuthLog, this, "List admin authentication log.");
+	}*/
 
 	Console()->Register("record", "?s", CFGFLAG_SERVER|CFGFLAG_STORE, ConRecord, this, "Record to a file");
 	Console()->Register("stoprecord", "", CFGFLAG_SERVER, ConStopRecord, this, "Stop recording");
@@ -2460,11 +2553,18 @@ int main(int argc, const char **argv) // ignore_convention
 
 	pEngine->InitLogfile();
 
+#if defined(CONF_FAMILY_UNIX)
+	FifoConsole *fifoConsole = new FifoConsole(pConsole, g_Config.m_SvInputFifo, CFGFLAG_SERVER);
+#endif
+
 	// run the server
 	dbg_msg("server", "starting...");
 	pServer->Run();
 
 	// free
+#if defined(CONF_FAMILY_UNIX)
+	delete fifoConsole;
+#endif
 	delete pServer;
 	delete pKernel;
 	delete pEngineMap;

@@ -34,7 +34,7 @@ class CSnapIDPool
 	int m_InUsage;
 
 public:
-
+	
 	CSnapIDPool();
 
 	void Reset();
@@ -75,6 +75,8 @@ class CServer : public IServer
 	
 	// info messages
 	void UpdateInfoTexts();
+	
+
 	struct CInfoText
 	{
 		int m_Interval;
@@ -258,6 +260,7 @@ public:
 	static void ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainModCommandUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainConsoleOutputLevelUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	//static void ConAuthLog(IConsole::IResult *pResult, void *pUser);
 
 	void RegisterCommands();
 

@@ -10,6 +10,7 @@
 #include <game/layers.h>
 #include <game/voting.h>
 
+
 #include "eventhandler.h"
 #include "gamecontroller.h"
 #include "gameworld.h"
@@ -23,7 +24,7 @@
 #include <chrono>
 
 #define MAX_MUTES 35
-#define ZCATCH_VERSION "0.4.8"
+#define ZCATCH_VERSION "0.5"
 
 /*
 	Tick
@@ -82,6 +83,10 @@ class CGameContext : public IGameServer
 	static void ConMutes(IConsole::IResult *pResult, void *pUserData);
 	
 	static void ConKill(IConsole::IResult *pResult, void *pUserData);
+
+	void Whisper(int ClientID, char *pStr);
+	void WhisperID(int ClientID, int VictimID, char *pMessage);
+	void Converse(int ClientID, char *pStr);
 
 	CGameContext(int Resetting);
 	void Construct(int Resetting);
@@ -159,7 +164,9 @@ public:
 		CHAT_ALL=-2,
 		CHAT_SPEC=-1,
 		CHAT_RED=0,
-		CHAT_BLUE=1
+		CHAT_BLUE=1,
+		CHAT_WHISPER_SEND=2,
+		CHAT_WHISPER_RECV=3
 	};
 	
 	struct CMutes

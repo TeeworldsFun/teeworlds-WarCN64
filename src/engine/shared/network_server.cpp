@@ -179,7 +179,7 @@ int CNetServer::Recv(CNetChunk *pChunk)
 				// TODO: check size here
 				if(m_RecvUnpacker.m_Data.m_Flags&NET_PACKETFLAG_CONTROL && m_RecvUnpacker.m_Data.m_aChunkData[0] == NET_CTRLMSG_CONNECT)
 				{
-					if (g_Config.m_SvPwAntispoof)
+					if (g_Config.m_SvPwAntiflood)
 					{
 					// anti spoof
 					// simulate accept so we can wait for NETMSG_INFO
@@ -230,7 +230,7 @@ int CNetServer::Recv(CNetChunk *pChunk)
 						}
 					}
 
-					if (g_Config.m_SvPwAntispoof && !Found)
+					if (g_Config.m_SvPwAntiflood && !Found)
 					{
 						// anti spoof
 						// got packet from new client
@@ -245,7 +245,7 @@ int CNetServer::Recv(CNetChunk *pChunk)
 						if (Msg == NETMSG_INFO)
 						{
 							// unpack info packet
-							const char *pVersion = Unpacker.GetString(CUnpacker::SANITIZE_CC);
+							/*const char *pVersion =*/ Unpacker.GetString(CUnpacker::SANITIZE_CC);
 							const char *pPassword = Unpacker.GetString(CUnpacker::SANITIZE_CC);
 
 							// validate token
@@ -300,7 +300,7 @@ void CNetServer::AcceptClient(NETADDR Addr)
 
 			mem_zero(&m_Construct, sizeof(m_Construct));
 
-			unsigned char *pChunkData;
+			//unsigned char *pChunkData;
 			m_Construct.m_aChunkData[0] = NET_CTRLMSG_CONNECT;
 			m_Construct.m_DataSize = 1;
 			m_Construct.m_Flags = NET_PACKETFLAG_CONTROL;

@@ -104,6 +104,11 @@ MACRO_CONFIG_INT(EcAuthTimeout, ec_auth_timeout, 30, 1, 120, CFGFLAG_ECON, "Time
 MACRO_CONFIG_INT(EcOutputLevel, ec_output_level, 1, 0, 2, CFGFLAG_ECON, "Adjusts the amount of information in the external console")
 
 MACRO_CONFIG_INT(SvGlobalBantime, sv_global_bantime, 60, 0, 1440, CFGFLAG_SERVER, "The time a client gets banned if the ban server reports it. 0 to disable")
+MACRO_CONFIG_INT(SvRespawnProtection, sv_respawn_protection, 1, 0, 1, CFGFLAG_SERVER, "Whether a player gets respawn protection")
+
+MACRO_CONFIG_STR(SvInputFifo, sv_input_fifo, 128, "", CFGFLAG_SERVER, "Fifo file to use as input for server console")
+MACRO_CONFIG_INT(SvShutdownWhenEmpty, sv_shutdown_when_empty, 0, 0, 1, CFGFLAG_SERVER, "Shutdown server as soon as noone is on it anymore")
+
 
 MACRO_CONFIG_INT(Debug, debug, 0, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SERVER, "Debug mode")
 MACRO_CONFIG_INT(DbgStress, dbg_stress, 0, 0, 0, CFGFLAG_CLIENT|CFGFLAG_SERVER, "Stress systems")
@@ -114,6 +119,6 @@ MACRO_CONFIG_INT(DbgHitch, dbg_hitch, 0, 0, 0, CFGFLAG_SERVER, "Hitch warnings")
 MACRO_CONFIG_STR(DbgStressServer, dbg_stress_server, 32, "localhost", CFGFLAG_CLIENT, "Server to stress")
 MACRO_CONFIG_INT(DbgResizable, dbg_resizable, 0, 0, 0, CFGFLAG_CLIENT, "Enables window resizing")
 
-MACRO_CONFIG_INT(SvPwAntispoof, sv_pw_antispoof, 1, 0, 1, CFGFLAG_SERVER, "Enables Password Antispoof")
+MACRO_CONFIG_INT(SvPwAntiflood, sv_pw_antiflood, 1, 0, 1, CFGFLAG_SERVER, "Enables Password Antispoof")
 
 #endif

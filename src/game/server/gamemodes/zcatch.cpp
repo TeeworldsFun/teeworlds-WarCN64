@@ -2,7 +2,7 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 /* zCatch by erd and Teetime                                                                 */
 /* Modified by Teelevision for zCatch/TeeVi, see readme.txt and license.txt.                 */
-
+#include <iostream>
 #include <engine/shared/config.h>
 #include <game/server/gamecontext.h>
 #include <game/server/gamecontroller.h>
@@ -180,8 +180,8 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		// todo directly release new joining players after they join the game if the ReleaseGame is running
 		
         
-		/* Check if the killer has been already killed and is in spectator (victim may died through wallshot) */
-		if(pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
+		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
+		if(pKiller->GetTeam() != TEAM_SPECTATORS)
 		{
             if ((g_Config.m_SvReleaseGame == 1) & (numPlayers < g_Config.m_SvLastStandingPlayers)) {
             ++pKiller->m_zCatchNumKillsInARow;
@@ -215,7 +215,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	victim->m_zCatchNumKillsInARow = 0;
 	victim->m_zCatchNumKillsReleased = 0;
 
-	// Update colours
+	// Update colors
 	OnPlayerInfoChange(victim);
 	OnPlayerInfoChange(pKiller);
 	
@@ -235,15 +235,67 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 {
-	if(g_Config.m_SvColorIndicator && pP->m_zCatchNumKillsInARow <= 20)
+	int Num;
+	if(g_Config.m_SvColorIndicator)
 	{
-		int Num = max(0, 240 - pP->m_zCatchNumKillsInARow * 15);
+		Num = max(0, 240 - pP->m_zCatchNumKillsInARow * 15);
 		if(g_Config.m_SvGameColor == 2){
-		Num = max(0, 0 + pP->m_zCatchNumKillsInARow *1);
-		pP->m_TeeInfos.m_ColorBody = 0xff0000 - Num * 0x0a0a0a;
-		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
-		pP->m_TeeInfos.m_UseCustomColor = 1;
-			
+		switch(pP->m_zCatchNumKillsInARow){
+    		case 0:
+				pP->m_TeeInfos.m_ColorBody = 0xFFBB00;
+				pP->m_TeeInfos.m_ColorFeet =  0x11FF00;
+				break;
+    		case 15:
+				pP->m_TeeInfos.m_ColorBody = 0xEEFF00;
+				break;
+    		case 14:
+				pP->m_TeeInfos.m_ColorBody = 0xDDFF00;
+				break;
+    		case 13:
+				pP->m_TeeInfos.m_ColorBody = 0xCCFF00;
+				break;
+    		case 12:
+				pP->m_TeeInfos.m_ColorBody = 0xBBFF00;
+				break;
+    		case 11:
+				pP->m_TeeInfos.m_ColorBody = 0xAAFF00;
+				break;
+    		case 10:
+				pP->m_TeeInfos.m_ColorBody = 0x99FF00;
+				break;
+    		case 9:
+				pP->m_TeeInfos.m_ColorBody = 0x88FF00;
+				break;
+    		case 8:
+				pP->m_TeeInfos.m_ColorBody = 0x77FF00;
+				break;
+    		case 7:
+				pP->m_TeeInfos.m_ColorBody = 0x66FF00;
+				break;
+    		case 6:
+				pP->m_TeeInfos.m_ColorBody = 0x55FF00;
+				break;
+    		case 5:
+				pP->m_TeeInfos.m_ColorBody = 0x44FF00;
+				break;
+    		case 4:
+				pP->m_TeeInfos.m_ColorBody = 0x33FF00;
+				break;
+    		case 3:
+				pP->m_TeeInfos.m_ColorBody = 0x22FF00;
+				break;
+    		case 2:
+				pP->m_TeeInfos.m_ColorBody = 0x11FF00;
+				break;
+    		case 1:
+				pP->m_TeeInfos.m_ColorBody = 0x00FF00;
+				break;
+    		default:
+				pP->m_TeeInfos.m_ColorBody = 0x000000;
+				break;
+    	}
+    	pP->m_TeeInfos.m_ColorFeet = 0x11FF00 + pP->m_TeeInfos.m_ColorFeet;
+    	pP->m_TeeInfos.m_UseCustomColor = 1;
 
 		}
 		if(g_Config.m_SvGameColor == 1){
@@ -251,21 +303,19 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
 		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
-			
-
-			
 		}else{
+		
 		Num = max(0, 160 - pP->m_zCatchNumKillsInARow * 10);
 		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
 		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
+	}
 			
 
 
 		}
 
 	}
-}
 
 void CGameController_zCatch::StartRound()
 {
