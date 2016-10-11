@@ -273,21 +273,21 @@ void CGameWorld::UpdatePlayerMaps()
 			dist[j].first = 1e10;
 			if (!Server()->ClientIngame(j))
 				continue;
-			CCharacter* ch = GameServer()->m_apPlayers[j]->GetCharacter();
+			/*CCharacter* ch = GameServer()->m_apPlayers[j]->GetCharacter();
 			if (!ch)
 				continue;
 			// copypasted chunk from character.cpp Snap() follows
 			int SnappingClient = i;
 			CCharacter* SnapChar = GameServer()->GetPlayerChar(SnappingClient);
 			if(SnapChar &&
-				GameServer()->m_apPlayers[SnappingClient]->GetTeam() != -1/* &&
+				GameServer()->m_apPlayers[SnappingClient]->GetTeam() != -1 &&
 				!ch->CanCollide(SnappingClient) &&
 				(!GameServer()->m_apPlayers[SnappingClient]->m_IsUsingDDRaceClient ||
 					(GameServer()->m_apPlayers[SnappingClient]->m_IsUsingDDRaceClient &&
 					!GameServer()->m_apPlayers[SnappingClient]->m_ShowOthers
                                 	)
-				)*/
-                        ) continue;
+				)
+                        ) continue;*/
 
 			dist[j].first = distance(GameServer()->m_apPlayers[i]->m_ViewPos, GameServer()->m_apPlayers[j]->m_ViewPos);
 		}
