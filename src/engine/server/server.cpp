@@ -699,6 +699,7 @@ int CServer::NewClientNoAuthCallback(int ClientID, void *pUser)
 	pThis->m_aClients[ClientID].m_Authed = AUTHED_NO;
 	pThis->m_aClients[ClientID].m_AuthTries = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
+	pThis->m_aClients[ClientID].m_CustClt = 0;
 	pThis->m_aClients[ClientID].Reset();
 
 	pThis->SendMap(ClientID);
@@ -718,7 +719,6 @@ int CServer::NewClientCallback(int ClientID, void *pUser)
 	pThis->m_aClients[ClientID].m_CustClt = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	memset(&pThis->m_aClients[ClientID].m_Addr, 0, sizeof(NETADDR));
-	pThis->m_aClients[ClientID].m_CustClt = 0;
 	pThis->m_aClients[ClientID].Reset();
 	return 0;
 }
@@ -744,6 +744,7 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	pThis->m_aClients[ClientID].m_Authed = AUTHED_NO;
 	pThis->m_aClients[ClientID].m_AuthTries = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
+	pThis->m_aClients[ClientID].m_CustClt = 0;
 	pThis->m_aClients[ClientID].m_Snapshots.PurgeAll();
 	return 0;
 }
