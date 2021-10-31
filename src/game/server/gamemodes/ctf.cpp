@@ -21,7 +21,7 @@ CGameControllerCTF::CGameControllerCTF(class CGameContext *pGameServer)
 {
 	m_apFlags[0] = 0;
 	m_apFlags[1] = 0;
-	m_pGameType = "WarCN 64";
+	m_pGameType = "WarCN";
 	m_GameFlags = GAMEFLAG_TEAMS|GAMEFLAG_FLAGS;
 	m_aTeamscore[TEAM_RED] = g_Config.m_FlagHealth;
 	m_aTeamscore[TEAM_BLUE] = g_Config.m_FlagHealth;
