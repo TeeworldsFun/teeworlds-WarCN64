@@ -237,12 +237,6 @@ CCharacter *CGameWorld::ClosestCharacter(vec2 Pos, float Radius, CEntity *pNotTh
 		if(p == pNotThis)
 			continue;
 
-        if(NotThisTeam != -1)
-        {
-            if(NotThisTeam == p->GetPlayer()->GetTeam())
-                continue;
-        }
-
 		float Len = distance(Pos, p->m_Pos);
 		if(Len < p->m_ProximityRadius+Radius)
 		{
@@ -338,71 +332,3 @@ void CGameWorld::UpdatePlayerMaps()
 		map[VANILLA_MAX_CLIENTS - 1] = -1; // player with empty name to say chat msgs
 	}
 }
-CFlag *CGameWorld::ClosestFlag(vec2 Pos, float Radius, int NotThisTeam)
-{
-	// Find other players
-	float ClosestRange = Radius*2;
-	CFlag *pClosest = 0;
-
-	CFlag *p = (CFlag *)GameServer()->m_World.FindFirst(ENTTYPE_FLAG);
-	for(; p; p = (CFlag *)p->TypeNext())
- 	{
- 	    if(p->m_Team == NotThisTeam)
-            continue;
-
-		float Len = distance(Pos, p->m_Pos);
-		if(Len < p->m_ProximityRadius+Radius)
-		{
-			if(Len < ClosestRange)
-			{
-				ClosestRange = Len;
-				pClosest = p;
-			}
-		}
-	}
-
-	return pClosest;
-}
-CFlag *CGameWorld::IntersectFlag(vec2 Pos0, vec2 Pos1, float Radius, vec2& NewPos)
-{
-	// Find other flags
-	float ClosestLen = distance(Pos0, Pos1) * 100.0f;
-	CFlag *pClosest = 0;
-
-	CFlag *p = (CFlag *)FindFirst(ENTTYPE_FLAG);
-	for(; p; p = (CFlag *)p->TypeNext())
- 	{
-		vec2 IntersectPos = closest_point_on_line(Pos0, Pos1, p->m_Pos);
-		float Len = distance(p->m_Pos, IntersectPos);
-		if(Len < p->m_ProximityRadius+Radius)
-		{
-			Len = distance(Pos0, IntersectPos);
-			if(Len < ClosestLen)
-			{
-				NewPos = IntersectPos;
-				ClosestLen = Len;
-				pClosest = p;
-			}
-		}
-		else
-        {
-            vec2 IntersectPos1 = closest_point_on_line(Pos0, Pos1, p->m_Pos2);
-            float Len1 = distance(p->m_Pos2, IntersectPos1);
-            if(Len1 < p->m_ProximityRadius+Radius)
-            {
-                Len1 = distance(Pos0, IntersectPos1);
-                if(Len1 < ClosestLen)
-                {
-                    NewPos = IntersectPos1;
-                    ClosestLen = Len;
-                    pClosest = p;
-                }
-            }
-        }
-	}
-
-	return pClosest;
-}
-
-
-CCharacter *CGameWorld::ClosestCharacter(vec2 Pos, float Radius, CEntity *pNotThis, int NotThisTeam)
