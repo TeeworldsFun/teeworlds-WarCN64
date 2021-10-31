@@ -407,7 +407,7 @@ CFlag *CGameWorld::ClosestFlag(vec2 Pos, float Radius, int NotThisTeam)
 				pClosest = p;
 			}
 		}
-	}
+	}*/
 
-	return pClosest;*/
+	return pClosest;
 }
