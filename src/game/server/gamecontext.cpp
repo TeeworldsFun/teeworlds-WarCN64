@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright © 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include <new>
 #include <base/math.h>
 #include <engine/shared/config.h>
@@ -13,6 +19,7 @@
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"
+#include "entities/flag.h"
 
 enum
 {
@@ -130,9 +137,11 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 	{
 		// deal damage
 		CCharacter *apEnts[MAX_CLIENTS];
+		CFlag *apFlags[2];
 		float Radius = 135.0f;
 		float InnerRadius = 48.0f;
 		int Num = m_World.FindEntities(Pos, Radius, (CEntity**)apEnts, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
+		int Num2 = m_World.FindEntities(Pos, Radius, (CEntity**)apFlags, 2, CGameWorld::ENTTYPE_FLAG);
 		for(int i = 0; i < Num; i++)
 		{
 			vec2 Diff = apEnts[i]->m_Pos - Pos;
@@ -145,13 +154,43 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 			if((int)Dmg)
 				apEnts[i]->TakeDamage(ForceDir*Dmg*2, (int)Dmg, Owner, Weapon);
 		}
+		for(int i = 0; i < Num2; i++)
+		{
+		    vec2 FlagPos;
+		    if(distance(apFlags[i]->m_Pos, Pos) > distance(apFlags[i]->m_Pos2, Pos))
+                FlagPos = apFlags[i]->m_Pos2;
+            else
+                FlagPos = apFlags[i]->m_Pos;
+
+			vec2 Diff = FlagPos - Pos;
+			vec2 ForceDir(0,1);
+			float l = length(Diff);
+			if(l)
+				ForceDir = normalize(Diff);
+			l = 1-clamp((l-InnerRadius)/(Radius-InnerRadius), 0.0f, 1.0f);
+			float Dmg = 6 * l;
+			if((int)Dmg)
+				apFlags[i]->TakeDamage((int)Dmg, Owner);
+		}
 	}
 }
+
+/*
+void create_smoke(vec2 Pos)
+{
+	// create the event
+	EV_EXPLOSION *pEvent = (EV_EXPLOSION *)events.create(EVENT_SMOKE, sizeof(EV_EXPLOSION));
+	if(pEvent)
+	{
+		pEvent->x = (int)Pos.x;
+		pEvent->y = (int)Pos.y;
+	}
+}*/
 
 void CGameContext::CreatePlayerSpawn(vec2 Pos, int64_t Mask)
 {
 	// create the event
-	CNetEvent_Spawn *ev = (CNetEvent_Spawn *)m_Events.Create(NETEVENTTYPE_SPAWN, sizeof(CNetEvent_Spawn), Mask);
+		CNetEvent_Spawn *ev = (CNetEvent_Spawn *)m_Events.Create(NETEVENTTYPE_SPAWN, sizeof(CNetEvent_Spawn), Mask);
 	if(ev)
 	{
 		ev->m_X = (int)Pos.x;
@@ -410,6 +449,12 @@ void CGameContext::OnTick()
 		{
 			m_apPlayers[i]->Tick();
 			m_apPlayers[i]->PostTick();
+
+			if(IsFilteredWord(Server()->ClientName(i)) && g_Config.m_InsultProtection) // Prevent trollers.
+            {
+                Server()->Kick(i, "(AutoKick) You have an insult in your name, change it and come back !");
+                continue; // Useless until something is added under this.
+            }
 		}
 	}
 
@@ -530,6 +575,12 @@ void CGameContext::OnClientEnter(int ClientID)
 	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), m_apPlayers[ClientID]->GetTeam());
 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
+	SendChatTarget(ClientID, "Mod作者Neox.");
+	SendChatTarget(ClientID, "玩的开心！");
+	SendChatTarget(ClientID, "医疗兵：可以放置回血区，自己每秒回一滴血/甲，红队回血区显示为榴弹炮，蓝队为等离子体(激光点)，标志为爱心");
+        SendChatTarget(ClientID, "士兵：脚底有一把激光枪做装饰证明他的角色是士兵，奔跑速度快，手枪按住自动发射，无限子弹而且发射速度更快");
+	SendChatTarget(ClientID, "巫师：拥有一个助手（用光点显示），可以发射火球，无限跳");
+        SendChatTarget(ClientID, "/w - 成为医疗兵 /s - 成为士兵 /w - 成为巫师 /n - 成为忍者");
 	m_VoteUpdate = true;
 }
 
@@ -578,6 +629,143 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 		if(m_apPlayers[i] && m_apPlayers[i]->m_SpectatorID == ClientID)
 			m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
 	}
+}
+
+bool CGameContext::IsFilteredWord(const char* pSentence)
+{
+    if(str_find_nocase(pSentence, "fick"))
+        return true;
+
+    if(str_find_nocase(pSentence, "fuck"))
+        return true;
+
+    if(str_find_nocase(pSentence, "shut up"))
+        return true;
+
+    if(str_find_nocase(pSentence, "stfu"))
+        return true;
+
+    if(str_find_nocase(pSentence, "asshol"))
+        return true;
+
+    if(str_find_nocase(pSentence, "bitch"))
+        return true;
+
+    if(str_find_nocase(pSentence, "slut"))
+        return true;
+
+    if(str_find_nocase(pSentence, "piece of shit"))
+        return true;
+
+    if(str_find_nocase(pSentence, "suck my"))
+        return true;
+
+    if(str_find_nocase(pSentence, "bastar"))
+        return true;
+
+    if(str_find_nocase(pSentence, "nigger"))
+        return true;
+
+    if(str_find_nocase(pSentence, "nigga"))
+        return true;
+
+    if(str_find_nocase(pSentence, " pute"))
+        return true;
+
+    if(str_find_nocase(pSentence, "pute "))
+        return true;
+
+    if(str_find_nocase(pSentence, "fdp"))
+        return true;
+
+    if(str_find_nocase(pSentence, "conar"))
+        return true;
+
+    if(str_find_nocase(pSentence, "encul"))
+        return true;
+
+    if(str_find_nocase(pSentence, "salo"))
+        return true;
+
+    if(str_find_nocase(pSentence, "salau"))
+        return true;
+
+    if(str_find_nocase(pSentence, "enflur"))
+        return true;
+
+    if(str_find_nocase(pSentence, "nike ta"))
+        return true;
+
+    if(str_find_nocase(pSentence, "ta gueule"))
+        return true;
+
+    if(str_find_nocase(pSentence, "ntm"))
+        return true;
+
+    if(str_find_nocase(pSentence, "batar"))
+        return true;
+
+    if(str_find_nocase(pSentence, "suce m"))
+        return true;
+
+    if(str_find_nocase(pSentence, "hurensohn"))
+        return true;
+
+    if(str_find_nocase(pSentence, "hundesohn"))
+        return true;
+
+    if(str_find_nocase(pSentence, "mutterficker"))
+        return true;
+
+    if(str_find_nocase(pSentence, "spasti"))
+        return true;
+
+    if(str_find_nocase(pSentence, "drecksmongo"))
+        return true;
+
+    if(str_find_nocase(pSentence, "arschloch"))
+        return true;
+
+    if(str_find_nocase(pSentence, "wichser"))
+        return true;
+
+    if(str_find_nocase(pSentence, "rcon"))
+        return true;
+
+    if(str_find_nocase(pSentence, "nmd"))
+        return true;
+
+    if(str_find_nocase(pSentence, "nm"))
+        return true;
+
+    if(str_find_nocase(pSentence, "wdnmd"))
+        return true;
+
+    if(str_find_nocase(pSentence, "cnm"))
+        return true;
+
+    if(str_find_nocase(pSentence, "操"))
+        return true;
+
+    if(str_find_nocase(pSentence, "艹"))
+        return true;
+
+    if(str_find_nocase(pSentence, "你妈死了"))
+        return true;
+
+    if(str_find_nocase(pSentence, "吊"))
+        return true;
+
+    if(str_find_nocase(pSentence, "逼"))
+        return true;
+
+    if(str_find_nocase(pSentence, "日"))
+        return true;
+
+    if(str_find_nocase(pSentence, "rnm"))
+        return true;
+
+    return false;
 }
 
 void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
@@ -639,6 +827,83 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				return;
 
 			pPlayer->m_LastChat = Server()->Tick();
+
+			if(pMsg->m_pMessage[0] == '/')
+            {
+                if(!str_comp_nocase(pMsg->m_pMessage, "/info"))
+                {
+                    SendChatTarget(ClientID, "Mod原作者Neox");
+                    SendChatTarget(ClientID, "改进版 by FlowerFell-Sans && CHNFun team");
+                }
+                else if(!str_comp_nocase(pMsg->m_pMessage, "/h"))
+                {
+                    if(m_apPlayers[ClientID]->GetClass() == CLASS_HEALER)
+                    {
+                        SendChatTarget(ClientID, "你早就是医疗兵了 !");
+                        return;
+                    }
+                    m_apPlayers[ClientID]->SetClass(CLASS_HEALER);
+                    SendChatTarget(ClientID, "你现在是医疗兵了 !");
+                    if(GetPlayerChar(ClientID))
+                        GetPlayerChar(ClientID)->Die(ClientID, WEAPON_RIFLE);
+                }
+                else if(!str_comp_nocase(pMsg->m_pMessage, "/s"))
+                {
+                    if(m_apPlayers[ClientID]->GetClass() == CLASS_SOLDIER)
+                    {
+                        SendChatTarget(ClientID, "你早就是士兵了 !");
+                        return;
+                    }
+                    m_apPlayers[ClientID]->SetClass(CLASS_SOLDIER);
+                    SendChatTarget(ClientID, "你现在是士兵了 !");
+                    if(GetPlayerChar(ClientID))
+                        GetPlayerChar(ClientID)->Die(ClientID, WEAPON_HAMMER);
+                }
+                else if(!str_comp_nocase(pMsg->m_pMessage, "/n"))
+                {
+                    if(m_apPlayers[ClientID]->GetClass() == CLASS_NINJA)
+                    {
+                        SendChatTarget(ClientID, "你早就是忍者了 !");
+                        return;
+                    }
+                    m_apPlayers[ClientID]->SetClass(CLASS_NINJA);
+                    SendChatTarget(ClientID, "你现在是忍者了 !");
+                    if(GetPlayerChar(ClientID))
+                        GetPlayerChar(ClientID)->Die(ClientID, WEAPON_NINJA);
+                }
+                else if(!str_comp_nocase(pMsg->m_pMessage, "/w"))
+                {
+
+                    if(m_apPlayers[ClientID]->GetClass() == CLASS_WIZARD)
+                    {
+                        SendChatTarget(ClientID, "你早就是巫师了 !");
+                        return;
+                    }
+                    m_apPlayers[ClientID]->SetClass(CLASS_WIZARD);
+                    SendChatTarget(ClientID, "你现在是巫师了 !");
+                    if(GetPlayerChar(ClientID))
+                        GetPlayerChar(ClientID)->Die(ClientID, WEAPON_SELF);
+                }
+                else if(!str_comp_nocase(pMsg->m_pMessage, "/cmdlist"))
+                {
+                    SendChatTarget(ClientID, "~~~~CMDLIST~~~~");
+                    SendChatTarget(ClientID, "/info - 服务器帮助");
+                    SendChatTarget(ClientID, "/h - 成为医疗兵");
+                    SendChatTarget(ClientID, "/s - 成为士兵");
+                    SendChatTarget(ClientID, "/w - 成为巫师");
+					SendChatTarget(ClientID, "/n - 成为忍者");
+                }
+                else
+                    SendChatTarget(ClientID, "This command doesn't exist ! Try \"/cmdlist\".");
+
+                return;
+            }
+
+            if(g_Config.m_InsultProtection && IsFilteredWord(pMsg->m_pMessage))
+            {
+                Server()->Kick(ClientID, "(AutoKick) Insults are not allowed !");
+                return;
+            }
 
 			SendChat(ClientID, Team, pMsg->m_pMessage);
 		}
@@ -735,7 +1000,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					return;
 				}
 				if (!Server()->ReverseTranslate(KickID, ClientID))
-                    return;
+                	 return;
 
 				if(Server()->IsAuthed(KickID))
 				{
@@ -1488,14 +1753,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//players = new CPlayer[MAX_CLIENTS];
 
 	// select gametype
-	if(str_comp(g_Config.m_SvGametype, "mod") == 0)
-		m_pController = new CGameControllerMOD(this);
-	else if(str_comp(g_Config.m_SvGametype, "ctf") == 0)
-		m_pController = new CGameControllerCTF(this);
-	else if(str_comp(g_Config.m_SvGametype, "tdm") == 0)
-		m_pController = new CGameControllerTDM(this);
-	else
-		m_pController = new CGameControllerDM(this);
+	m_pController = new CGameControllerCTF(this);
 
 	// setup core world
 	//for(int i = 0; i < MAX_CLIENTS; i++)

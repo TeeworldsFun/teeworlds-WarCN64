@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright © 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include <new>
 #include <engine/shared/config.h>
 #include <game/server/gamecontext.h>
@@ -8,6 +14,9 @@
 #include "character.h"
 #include "laser.h"
 #include "projectile.h"
+#include "flag.h"
+#include "fireball.h"
+#include "healercircle.h"
 
 //input count
 struct CInputCount
@@ -116,7 +125,7 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
-	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000) && m_pPlayer->GetClass() != CLASS_NINJA)
 	{
 		// time's up, return
 		m_aWeapons[WEAPON_NINJA].m_Got = false;
@@ -131,7 +140,7 @@ void CCharacter::HandleNinja()
 
 	m_Ninja.m_CurrentMoveTime--;
 
-	if (m_Ninja.m_CurrentMoveTime == 0)
+	if (m_Ninja.m_CurrentMoveTime == 0 && m_pPlayer->GetClass() != CLASS_NINJA)
 	{
 		// reset velocity
 		m_Core.m_Vel = m_Ninja.m_ActivationDir*m_Ninja.m_OldVelAmount;
@@ -181,6 +190,40 @@ void CCharacter::HandleNinja()
 					m_apHitObjects[m_NumObjectsHit++] = aEnts[i];
 
 				aEnts[i]->TakeDamage(vec2(0, -10.0f), g_pData->m_Weapons.m_Ninja.m_pBase->m_Damage, m_pPlayer->GetCID(), WEAPON_NINJA);
+			}
+		}
+
+		// check if we Hit anything along the way
+		{
+            CFlag *aEnts[2];
+			vec2 Dir = m_Pos - OldPos;
+			float Radius = m_ProximityRadius * 2.0f;
+			vec2 Center = OldPos + Dir * 0.5f;
+			int Num = GameServer()->m_World.FindEntities(Center, Radius, (CEntity**)aEnts, 2, CGameWorld::ENTTYPE_FLAG);
+
+			for (int i = 0; i < Num; ++i)
+			{
+				// make sure we haven't Hit this object before
+				bool bAlreadyHit = false;
+				for (int j = 0; j < m_NumObjectsHit; j++)
+				{
+					if (m_apHitObjects[j] == aEnts[i])
+						bAlreadyHit = true;
+				}
+				if (bAlreadyHit)
+					continue;
+
+				// check so we are sufficiently close
+				if (distance(aEnts[i]->m_Pos, m_Pos) > (m_ProximityRadius * 2.0f) && distance(aEnts[i]->m_Pos2, m_Pos) > (m_ProximityRadius * 2.0f))
+					continue;
+
+				// Hit a player, give him damage and stuffs...
+				GameServer()->CreateSound(aEnts[i]->m_Pos, SOUND_NINJA_HIT);
+				// set his velocity to fast upward (for now)
+				if(m_NumObjectsHit < 10)
+					m_apHitObjects[m_NumObjectsHit++] = aEnts[i];
+
+				aEnts[i]->TakeDamage(g_pData->m_Weapons.m_Ninja.m_pBase->m_Damage, m_pPlayer->GetCID());
 			}
 		}
 
@@ -254,6 +297,9 @@ void CCharacter::FireWeapon()
 	if(m_ActiveWeapon == WEAPON_GRENADE || m_ActiveWeapon == WEAPON_SHOTGUN || m_ActiveWeapon == WEAPON_RIFLE)
 		FullAuto = true;
 
+    if(m_pPlayer->GetClass() == CLASS_SOLDIER || m_pPlayer->GetClass() == CLASS_NINJA)
+        FullAuto = true;
+
 
 	// check if we gonna fire
 	bool WillFire = false;
@@ -273,7 +319,7 @@ void CCharacter::FireWeapon()
 		m_ReloadTimer = 125 * Server()->TickSpeed() / 1000;
 		if(m_LastNoAmmoSound+Server()->TickSpeed() <= Server()->Tick())
 		{
-			GameServer()->CreateSound(m_Pos, SOUND_WEAPON_NOAMMO);
+			GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG);
 			m_LastNoAmmoSound = Server()->Tick();
 		}
 		return;
@@ -285,14 +331,33 @@ void CCharacter::FireWeapon()
 	{
 		case WEAPON_HAMMER:
 		{
+		    if(m_pPlayer->GetClass() == CLASS_WIZARD && m_pPlayer->GetSpecialAmount())
+            {
+                if(m_pPlayer->HaveMaxSpecial())
+                    m_pPlayer->SetSpecialReload(Server()->TickSpeed() * 5);
+                m_pPlayer->AddSpecial(-1);
+                new CFireBall(&GameServer()->m_World, m_pPlayer->GetCID(), Direction, ProjStartPos);
+            }
+
+            if(m_pPlayer->GetClass() == CLASS_HEALER && m_pPlayer->GetSpecialAmount())
+            {
+                if(m_pPlayer->HaveMaxSpecial())
+                    m_pPlayer->SetSpecialReload(Server()->TickSpeed() * 15);
+                m_pPlayer->AddSpecial(-1);
+                new CHelperCircle(&GameServer()->m_World, m_pPlayer->GetCID(), m_Pos + vec2(m_Input.m_TargetX, m_Input.m_TargetY));
+            }
+
 			// reset objects Hit
 			m_NumObjectsHit = 0;
 			GameServer()->CreateSound(m_Pos, SOUND_HAMMER_FIRE);
 
 			CCharacter *apEnts[MAX_CLIENTS];
+			CFlag *apFlags[2];
 			int Hits = 0;
 			int Num = GameServer()->m_World.FindEntities(ProjStartPos, m_ProximityRadius*0.5f, (CEntity**)apEnts,
 														MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
+			int Num2 = GameServer()->m_World.FindEntities(ProjStartPos, m_ProximityRadius, (CEntity**)apFlags,
+														2, CGameWorld::ENTTYPE_FLAG);
 
 			for (int i = 0; i < Num; ++i)
 			{
@@ -315,6 +380,29 @@ void CCharacter::FireWeapon()
 
 				pTarget->TakeDamage(vec2(0.f, -1.f) + normalize(Dir + vec2(0.f, -1.1f)) * 10.0f, g_pData->m_Weapons.m_Hammer.m_pBase->m_Damage,
 					m_pPlayer->GetCID(), m_ActiveWeapon);
+				Hits++;
+			}
+
+			for (int i = 0; i < Num2; ++i)
+			{
+				CFlag *pTarget = apFlags[i];
+
+				if (GameServer()->Collision()->IntersectLine(ProjStartPos, pTarget->m_Pos, NULL, NULL))
+					continue;
+
+				// set his velocity to fast upward (for now)
+				if(length(pTarget->m_Pos-ProjStartPos) > 0.0f)
+					GameServer()->CreateHammerHit(pTarget->m_Pos-normalize(pTarget->m_Pos-ProjStartPos)*m_ProximityRadius*0.5f);
+				else
+					GameServer()->CreateHammerHit(ProjStartPos);
+
+				vec2 Dir;
+				if (length(pTarget->m_Pos - m_Pos) > 0.0f)
+					Dir = normalize(pTarget->m_Pos - m_Pos);
+				else
+					Dir = vec2(0.f, -1.f);
+
+				pTarget->TakeDamage(g_pData->m_Weapons.m_Hammer.m_pBase->m_Damage, m_pPlayer->GetCID());
 				Hits++;
 			}
 
@@ -425,11 +513,17 @@ void CCharacter::FireWeapon()
 
 	m_AttackTick = Server()->Tick();
 
-	if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0) // -1 == unlimited
+	if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0 && m_pPlayer->GetClass() != CLASS_SOLDIER) // -1 == unlimited
 		m_aWeapons[m_ActiveWeapon].m_Ammo--;
 
 	if(!m_ReloadTimer)
 		m_ReloadTimer = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Firedelay * Server()->TickSpeed() / 1000;
+
+    if(m_pPlayer->GetClass() == CLASS_SOLDIER)
+        m_ReloadTimer /= 1.5f;
+
+    if(m_pPlayer->GetClass() == CLASS_NINJA)
+        m_ReloadTimer /= 5.5f;
 }
 
 void CCharacter::HandleWeapons()
@@ -448,7 +542,7 @@ void CCharacter::HandleWeapons()
 	FireWeapon();
 
 	// ammo regen
-	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
+	const int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
 	if(AmmoRegenTime)
 	{
 		// If equipped and not active, regen ammo?
@@ -576,7 +670,79 @@ void CCharacter::Tick()
 
 	// Previnput
 	m_PrevInput = m_Input;
-	return;
+
+    HandleWar();
+}
+
+void CCharacter::HandleWar()
+{
+    if(m_pPlayer->GetClass() == CLASS_SOLDIER)
+    {
+        const float MaxSpeed = IsGrounded() ? GameServer()->m_World.m_Core.m_Tuning.m_GroundControlSpeed * 2 : GameServer()->m_World.m_Core.m_Tuning.m_AirControlSpeed * 4;
+        const float Accel = IsGrounded() ? GameServer()->m_World.m_Core.m_Tuning.m_GroundControlAccel : GameServer()->m_World.m_Core.m_Tuning.m_AirControlAccel;
+        if(m_Input.m_Direction == 1)
+            m_Core.m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Core.m_Vel.x, Accel);
+        else if(m_Input.m_Direction == -1)
+            m_Core.m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Core.m_Vel.x, -Accel);
+    }
+    else if(m_pPlayer->GetClass() == CLASS_HEALER)
+    {
+        m_Core.m_HookTick = 0;
+        if(Server()->Tick() % Server()->TickSpeed() == 0)
+        {
+            if(GameServer()->GetPlayerChar(m_Core.m_HookedPlayer))
+            {
+                if(GameServer()->m_apPlayers[m_Core.m_HookedPlayer]->GetTeam() == m_pPlayer->GetTeam())
+                {
+                    if(g_Config.m_HealersHookHealAmount)
+                    {
+                        if(GameServer()->GetPlayerChar(m_Core.m_HookedPlayer)->GetHealth() < GameServer()->m_apPlayers[m_Core.m_HookedPlayer]->TotalHP())
+                            GameServer()->GetPlayerChar(m_Core.m_HookedPlayer)->IncreaseHealth(g_Config.m_HealersHookHealAmount);
+                        else
+                            GameServer()->GetPlayerChar(m_Core.m_HookedPlayer)->IncreaseArmor(g_Config.m_HealersHookHealAmount);
+                    }
+                }
+                else if(g_Config.m_HealersHookDamageAmount)
+                    GameServer()->GetPlayerChar(m_Core.m_HookedPlayer)->TakeDamage(vec2(0, 0), g_Config.m_HealersHookDamageAmount, m_pPlayer->GetCID(), -1);
+            }
+        }
+    }
+    else if(m_pPlayer->GetClass() == CLASS_WIZARD && m_Core.m_Jumped == 2)
+        m_Core.m_Jumped = 1;
+
+	if(m_pPlayer->GetClass() == CLASS_HEALER)
+    {
+        if(Server()->Tick() % Server()->TickSpeed() == 0)
+        {
+            if(m_Health < m_pPlayer->TotalHP())
+                IncreaseHealth(1);
+            else if(m_Armor < m_pPlayer->TotalAP())
+                IncreaseArmor(1);
+        }
+    }
+
+    char aBuf[512];
+    char aPast[512];
+    str_format(aPast, sizeof(aPast), "血量 : %d/%d\n甲 : %d/%d", m_Health, m_pPlayer->TotalHP(), m_Armor, m_pPlayer->TotalAP());
+    switch(m_pPlayer->GetClass())
+    {
+    case CLASS_HEALER:
+        str_format(aBuf, sizeof(aBuf), "医疗兵\n%s\n回血区域剩余 : %d/2", aPast, m_pPlayer->GetSpecialAmount());
+        break;
+    case CLASS_SOLDIER:
+        str_format(aBuf, sizeof(aBuf), "士兵\n%s", aPast);
+        break;
+    case CLASS_WIZARD:
+        str_format(aBuf, sizeof(aBuf), "巫师\n%s\n火球 : %d/10", aPast, m_pPlayer->GetSpecialAmount());
+        break;
+    case CLASS_NINJA:
+        str_format(aBuf, sizeof(aBuf), "杀!!!!!");
+        break;
+    default:
+        str_format(aBuf, sizeof(aBuf), "选一个职业！ !\n输入/h - 成为医疗兵 !\n输入/s - 成为士兵 !\n输入/w - 成为巫师 !\n输入/n - 成为忍者 !");
+        break;
+    }
+    GameServer()->SendBroadcast(aBuf, m_pPlayer->GetCID());
 }
 
 void CCharacter::TickDefered()
@@ -678,17 +844,17 @@ void CCharacter::TickPaused()
 
 bool CCharacter::IncreaseHealth(int Amount)
 {
-	if(m_Health >= 10)
+	if(m_Health >= m_pPlayer->TotalHP())
 		return false;
-	m_Health = clamp(m_Health+Amount, 0, 10);
+	m_Health = clamp(m_Health+Amount, 0, m_pPlayer->TotalHP());
 	return true;
 }
 
 bool CCharacter::IncreaseArmor(int Amount)
 {
-	if(m_Armor >= 10)
+	if(m_Armor >= m_pPlayer->TotalAP())
 		return false;
-	m_Armor = clamp(m_Armor+Amount, 0, 10);
+	m_Armor = clamp(m_Armor+Amount, 0, m_pPlayer->TotalAP());
 	return true;
 }
 
@@ -733,7 +899,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 	// m_pPlayer only inflicts half damage on self
 	if(From == m_pPlayer->GetCID())
-		Dmg = max(1, Dmg/2);
+		return false;
 
 	m_DamageTaken++;
 
@@ -820,7 +986,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 void CCharacter::Snap(int SnappingClient)
 {
-    int id = m_pPlayer->GetCID();
+	int id = m_pPlayer->GetCID();
 
 	if (!Server()->Translate(id, SnappingClient))
 		return;

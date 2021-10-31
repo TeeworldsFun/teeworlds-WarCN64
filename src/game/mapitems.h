@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright � 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #ifndef GAME_MAPITEMS_H
 #define GAME_MAPITEMS_H
 
@@ -40,6 +46,11 @@ enum
 	ENTITY_WEAPON_GRENADE,
 	ENTITY_POWERUP_NINJA,
 	ENTITY_WEAPON_RIFLE,
+	ENTITY_WEAPON_HAMMER,
+	ENTITY_WEAPON_GUN,
+	ENTITY_HEARTBOX,
+	ENTITY_WTF,
+	ENTITY_HELP,
 	NUM_ENTITIES,
 
 	TILE_AIR=0,
@@ -99,7 +110,7 @@ struct CMapItemInfo
 	int m_License;
 } ;
 
-struct CMapItemImage_v1
+struct CMapItemImage
 {
 	int m_Version;
 	int m_Width;
@@ -108,12 +119,6 @@ struct CMapItemImage_v1
 	int m_ImageName;
 	int m_ImageData;
 } ;
-
-struct CMapItemImage : public CMapItemImage_v1
-{
-	enum { CURRENT_VERSION=2 };
-	int m_Format;
-};
 
 struct CMapItemGroup_v1
 {

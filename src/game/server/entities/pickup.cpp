@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright � 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include <game/generated/protocol.h>
 #include <game/server/gamecontext.h>
 #include "pickup.h"
@@ -67,20 +73,31 @@ void CPickup::Tick()
 			case POWERUP_WEAPON:
 				if(m_Subtype >= 0 && m_Subtype < NUM_WEAPONS)
 				{
-					if(pChr->GiveWeapon(m_Subtype, 10))
-					{
-						RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
+				    if(m_Subtype != WEAPON_HAMMER)
+                    {
+                        if(pChr->GiveWeapon(m_Subtype, 10))
+                        {
+                            RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
 
-						if(m_Subtype == WEAPON_GRENADE)
-							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE);
-						else if(m_Subtype == WEAPON_SHOTGUN)
-							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN);
-						else if(m_Subtype == WEAPON_RIFLE)
-							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN);
+                            if(m_Subtype == WEAPON_GRENADE)
+                                GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE);
+                            else
+                                GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN);
 
-						if(pChr->GetPlayer())
-							GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), m_Subtype);
-					}
+                            if(pChr->GetPlayer())
+                                GameServer()->SendWeaponPickup(pChr->GetPlayer()->GetCID(), m_Subtype);
+                        }
+                    }
+                    else if(pChr->GetPlayer()->GetClass() != CLASS_SOLDIER && pChr->GetPlayer()->GetClass() != CLASS_NINJA && pChr->GetPlayer()->GetClass() != CLASS_NONE)
+                    {
+                        if(pChr->GetPlayer()->HaveMaxSpecial())
+                            return;
+                        pChr->GetPlayer()->SpecialAmmoMax();
+                        RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
+                        GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN);
+                    }
+                    else
+                        return;
 				}
 				break;
 

@@ -1,11 +1,26 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright � 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #ifndef GAME_SERVER_PLAYER_H
 #define GAME_SERVER_PLAYER_H
 
 // this include should perhaps be removed
 #include "entities/character.h"
 #include "gamecontext.h"
+
+enum
+{
+    CLASS_NONE = 0,
+    CLASS_SOLDIER = 1,
+    CLASS_WIZARD = 2,
+    CLASS_HEALER = 3,
+	CLASS_NINJA = 4,
+};
 
 // player object
 class CPlayer
@@ -97,6 +112,21 @@ public:
 		int m_Max;
 	} m_Latency;
 
+	// War
+
+    int GetClass() const {return m_Class; }
+    void SetClass(int Class) {m_Class = Class; }
+    int GetSpecialAmount() const {return m_SpecialAmount; }
+    void SetSpecialReload(int Time) {m_SpecialUseBack = Time; }
+    void AddSpecial(int Amount) {m_SpecialAmount += Amount; }
+    void AddGivenDamage(int Damage) {m_GivenDamage += Damage; }
+	int TotalHP();
+	int TotalAP();
+	int SpawnHP();
+	int SpawnAP();
+	void SpecialAmmoMax();
+	bool HaveMaxSpecial();
+
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;
@@ -104,10 +134,16 @@ private:
 	CGameContext *GameServer() const { return m_pGameServer; }
 	IServer *Server() const;
 
-	//
 	bool m_Spawning;
 	int m_ClientID;
 	int m_Team;
+
+	//War
+
+	int m_SpecialAmount;
+	int m_Class;
+	int m_SpecialUseBack;
+	int m_GivenDamage;
 };
 
 #endif

@@ -64,6 +64,15 @@ public:
 	bool IsAlive() const { return m_Alive; }
 	class CPlayer *GetPlayer() { return m_pPlayer; }
 
+    // War
+
+	int GetHealth() const {return m_Health; }
+	int GetArmor() const {return m_Armor; }
+	bool GetCaryingBox() const {return m_IsCaryingHeartbox; }
+	void SetCaryingBox(bool Value) {m_IsCaryingHeartbox = Value; }
+
+	void HandleWar();
+
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;
@@ -131,6 +140,9 @@ private:
 	CCharacterCore m_SendCore; // core that we should send
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
 
+    // War
+
+	bool m_IsCaryingHeartbox;
 };
 
 #endif

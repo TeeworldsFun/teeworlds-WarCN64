@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright � 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include <new>
 #include <engine/shared/config.h>
 #include "player.h"
@@ -28,12 +34,99 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	    idMap[i] = -1;
 	}
 	idMap[0] = ClientID;
+
+	m_Class = CLASS_NONE;
 }
 
 CPlayer::~CPlayer()
 {
 	delete m_pCharacter;
 	m_pCharacter = 0;
+}
+
+int CPlayer::TotalHP()
+{
+    switch(m_Class)
+    {
+    case CLASS_HEALER: return g_Config.m_HealersMaxHealth; break;
+    case CLASS_SOLDIER: return g_Config.m_SoldiersMaxHealth; break;
+    case CLASS_WIZARD: return g_Config.m_WizardsMaxHealth; break;
+    case CLASS_NINJA: return g_Config.m_NinjaMaxHealth; break;
+    }
+
+    return 10;
+}
+
+int CPlayer::TotalAP()
+{
+    switch(m_Class)
+    {
+    case CLASS_HEALER: return g_Config.m_HealersMaxArmor; break;
+    case CLASS_SOLDIER: return g_Config.m_SoldiersMaxArmor; break;
+    case CLASS_WIZARD: return g_Config.m_WizardsMaxArmor; break;
+    case CLASS_NINJA: return g_Config.m_NinjaMaxArmor; break;
+    }
+
+    return 10;
+}
+
+int CPlayer::SpawnHP()
+{
+    int Amount;
+    switch(m_Class)
+    {
+        case CLASS_HEALER: Amount = g_Config.m_HealersSpawnHealth; break;
+        case CLASS_SOLDIER: Amount = g_Config.m_SoldiersSpawnHealth; break;
+        case CLASS_WIZARD: Amount = g_Config.m_SoldiersSpawnHealth; break;
+        case CLASS_NINJA: Amount = g_Config.m_NinjaSpawnHealth; break;
+        default: Amount = TotalHP();
+    }
+
+    if(!Amount)
+        return TotalHP();
+
+    return Amount;
+}
+
+int CPlayer::SpawnAP()
+{
+    int Amount;
+    switch(m_Class)
+    {
+        case CLASS_HEALER: Amount = g_Config.m_HealersSpawnArmor; break;
+        case CLASS_SOLDIER: Amount = g_Config.m_SoldiersSpawnArmor; break;
+        case CLASS_WIZARD: Amount = g_Config.m_SoldiersSpawnArmor; break;
+        case CLASS_NINJA: Amount = g_Config.m_NinjaSpawnArmor; break;
+        default: Amount = TotalAP();
+    }
+
+    if(Amount == -1)
+        return TotalAP();
+
+    return Amount;
+}
+
+void CPlayer::SpecialAmmoMax()
+{
+    if(m_Class == CLASS_HEALER)
+        m_SpecialAmount = 2;
+    else if(m_Class == CLASS_WIZARD)
+        m_SpecialAmount = 10;
+	else if(m_Class == CLASS_NINJA)
+		m_SpecialAmount = 1;
+
+    m_SpecialUseBack = 0;
+}
+
+bool CPlayer::HaveMaxSpecial()
+{
+    if(m_Class == CLASS_HEALER && m_SpecialAmount == 2)
+        return true;
+    if(m_Class == CLASS_WIZARD && m_SpecialAmount == 10)
+        return true;
+	if(m_Class == CLASS_NINJA && m_SpecialAmount == 1)
+		return true;
+    return false;
 }
 
 void CPlayer::Tick()
@@ -45,6 +138,31 @@ void CPlayer::Tick()
 		return;
 
 	Server()->SetClientScore(m_ClientID, m_Score);
+
+    if(m_SpecialUseBack)
+    {
+        m_SpecialUseBack --;
+        bool Max_Reached = false;
+        if(!m_SpecialUseBack && !HaveMaxSpecial())
+        {
+            m_SpecialAmount ++;
+            if(!HaveMaxSpecial())
+            {
+                if(m_Class == CLASS_HEALER)
+                    m_SpecialUseBack = Server()->TickSpeed() * 15;
+                else if(m_Class == CLASS_WIZARD)
+                    m_SpecialUseBack = Server()->TickSpeed() * 5;
+				else if(m_Class == CLASS_NINJA)
+					m_SpecialUseBack = Server()->TickSpeed() * 15;
+            }
+        }
+        if(m_Class != CLASS_HEALER && m_Class != CLASS_WIZARD && m_Class != CLASS_NINJA)
+            m_SpecialUseBack = 0;
+        if(HaveMaxSpecial())
+            m_SpecialUseBack = 0;
+    }
+
+	Server()->SetClientScore(m_ClientID, m_Score + m_GivenDamage/100);
 
 	// do latency stuff
 	{

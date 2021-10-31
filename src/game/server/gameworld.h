@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright © 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #ifndef GAME_SERVER_GAMEWORLD_H
 #define GAME_SERVER_GAMEWORLD_H
 
@@ -37,7 +43,7 @@ private:
 	class IServer *m_pServer;
 
 	void UpdatePlayerMaps();
-
+	
 public:
 	class CGameContext *GameServer() { return m_pGameServer; }
 	class IServer *Server() { return m_pServer; }
@@ -86,6 +92,8 @@ public:
 	*/
 	class CCharacter *IntersectCharacter(vec2 Pos0, vec2 Pos1, float Radius, vec2 &NewPos, class CEntity *pNotThis = 0);
 
+	class CFlag *IntersectFlag(vec2 Pos0, vec2 Pos1, float Radius, vec2 &NewPos);
+
 	/*
 		Function: closest_CCharacter
 			Finds the closest CCharacter to a specific point.
@@ -98,7 +106,9 @@ public:
 		Returns:
 			Returns a pointer to the closest CCharacter or NULL if no CCharacter is close enough.
 	*/
-	class CCharacter *ClosestCharacter(vec2 Pos, float Radius, CEntity *ppNotThis);
+	class CCharacter *ClosestCharacter(vec2 Pos, float Radius, CEntity *ppNotThis, int NotThisTeam = -1);
+
+	class CFlag *ClosestFlag(vec2 Pos, float Radius, int NotThisTeam = -1);
 
 	/*
 		Function: insert_entity

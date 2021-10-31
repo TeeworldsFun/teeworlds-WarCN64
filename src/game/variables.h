@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright � 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #ifndef GAME_VARIABLES_H
 #define GAME_VARIABLES_H
 #undef GAME_VARIABLES_H // this file will be included several times
@@ -64,11 +70,50 @@ MACRO_CONFIG_STR(SvMaprotation, sv_maprotation, 768, "", CFGFLAG_SERVER, "Maps t
 MACRO_CONFIG_INT(SvRoundsPerMap, sv_rounds_per_map, 1, 1, 100, CFGFLAG_SERVER, "Number of rounds on each map before rotating")
 MACRO_CONFIG_INT(SvRoundSwap, sv_round_swap, 1, 0, 1, CFGFLAG_SERVER, "Swap teams between rounds")
 MACRO_CONFIG_INT(SvPowerups, sv_powerups, 1, 0, 1, CFGFLAG_SERVER, "Allow powerups like ninja")
-MACRO_CONFIG_INT(SvScorelimit, sv_scorelimit, 20, 0, 1000, CFGFLAG_SERVER, "Score limit (0 disables)")
+MACRO_CONFIG_INT(SvScorelimit, sv_scorelimit, 0, 0, 0, CFGFLAG_SERVER, "Use flag_health instead of this !")
 MACRO_CONFIG_INT(SvTimelimit, sv_timelimit, 0, 0, 1000, CFGFLAG_SERVER, "Time limit in minutes (0 disables)")
-MACRO_CONFIG_STR(SvGametype, sv_gametype, 32, "dm", CFGFLAG_SERVER, "Game type (dm, tdm, ctf)")
+MACRO_CONFIG_STR(SvGametype, sv_gametype, 32, "war", CFGFLAG_SERVER, "Game type (war)")
 MACRO_CONFIG_INT(SvTournamentMode, sv_tournament_mode, 0, 0, 1, CFGFLAG_SERVER, "Tournament mode. When enabled, players joins the server as spectator")
 MACRO_CONFIG_INT(SvSpamprotection, sv_spamprotection, 1, 0, 1, CFGFLAG_SERVER, "Spam protection")
+
+// WAR
+// Flag
+MACRO_CONFIG_INT(FlagHealth, flag_health, 5000, 100, 100000, CFGFLAG_SERVER, "Flags health")
+MACRO_CONFIG_INT(HeartboxHealAmount, heartbox_heal_amount, 500, 1, 100000, CFGFLAG_SERVER, "Amount of health that gets the flag from heartboxes")
+MACRO_CONFIG_INT(DamageboxAmount, damagebox_amount, -100, -10000, -1, CFGFLAG_SERVER, "Sorry for my bad english,hit flag");
+
+// Healers
+MACRO_CONFIG_INT(HealersMaxHealth, healers_max_health, 15, 1, 1000, CFGFLAG_SERVER, "Healers max health")
+MACRO_CONFIG_INT(HealersMaxArmor, healers_armor, 15, 1, 1000, CFGFLAG_SERVER, "Healers max armor")
+MACRO_CONFIG_INT(HealersSpawnHealth, healers_spawn_health, 0, 0, 1000, CFGFLAG_SERVER, "Healers spawn health (0 = max)")
+MACRO_CONFIG_INT(HealersSpawnArmor, healers_spawn_armor, 0, -1, 1000, CFGFLAG_SERVER, "Healers spawn armor (-1 = max)")
+MACRO_CONFIG_INT(HealersCircleSize, healers_circle_size, 200, 32, 100000, CFGFLAG_SERVER, "Healers circle size")
+MACRO_CONFIG_INT(HealersCircleHeal, healers_circle_healing_amount, 1, 1, 10000, CFGFLAG_SERVER, "Healers circle healing amount")
+MACRO_CONFIG_INT(HealersCircleDamage, healers_circle_damage_amount, 2, 1, 10000, CFGFLAG_SERVER, "Healers circle damage amount")
+MACRO_CONFIG_INT(HealersHookHealAmount, healers_hook_heal_amount, 2, 0, 1000, CFGFLAG_SERVER, "How many heal gets the hooked player per second")
+MACRO_CONFIG_INT(HealersHookDamageAmount, healers_hook_damage_amount, 2, 0, 1000, CFGFLAG_SERVER, "How many damage gets the hooked player per second")
+
+// Soldiers
+MACRO_CONFIG_INT(SoldiersMaxHealth, soldiers_max_health, 15, 1, 1000, CFGFLAG_SERVER, "Soldiers max health")
+MACRO_CONFIG_INT(SoldiersMaxArmor, soldiers_armor, 15, 1, 1000, CFGFLAG_SERVER, "Soldiers max armor")
+MACRO_CONFIG_INT(SoldiersSpawnHealth, soldiers_spawn_health, 0, 0, 1000, CFGFLAG_SERVER, "Soldiers spawn health (0 = max)")
+MACRO_CONFIG_INT(SoldiersSpawnArmor, soldiers_spawn_armor, 5, -1, 1000, CFGFLAG_SERVER, "Soldiers spawn armor (-1 = max)")
+
+// Wizards
+MACRO_CONFIG_INT(WizardsMaxHealth, wizards_max_health, 15, 1, 1000, CFGFLAG_SERVER, "Wizards max health")
+MACRO_CONFIG_INT(WizardsMaxArmor, wizards_armor, 15, 1, 1000, CFGFLAG_SERVER, "Wizards max armor")
+MACRO_CONFIG_INT(WizardsSpawnHealth, wizards_spawn_health, 0, 0, 1000, CFGFLAG_SERVER, "Wizards spawn health (0 = max)")
+MACRO_CONFIG_INT(WizardsSpawnArmor, wizards_spawn_armor, 5, -1, 1000, CFGFLAG_SERVER, "Wizards spawn armor (-1 = max)")
+
+// Ninja
+MACRO_CONFIG_INT(NinjaMaxHealth, ninja_max_health, 1, 1, 1000, CFGFLAG_SERVER, "Ninja max health")
+MACRO_CONFIG_INT(NinjaMaxArmor, ninja_armor, 0, 0, 1000, CFGFLAG_SERVER, "Ninja max armor")
+MACRO_CONFIG_INT(NinjaSpawnHealth, ninja_spawn_health, 0, 0, 1000, CFGFLAG_SERVER, "Ninja spawn health (0 = max)")
+MACRO_CONFIG_INT(NinjaSpawnArmor, ninja_spawn_armor, 0, 0, 1000, CFGFLAG_SERVER, "Ninja spawn armor (-1 = max)")
+
+// Other
+MACRO_CONFIG_INT(InsultProtection, insult_protection, 0, 0, 1, CFGFLAG_SERVER, "Kick automaticly players if they are insulting")
+
 
 MACRO_CONFIG_INT(SvRespawnDelayTDM, sv_respawn_delay_tdm, 3, 0, 10, CFGFLAG_SERVER, "Time needed to respawn after death in tdm gametype")
 
@@ -91,6 +136,5 @@ MACRO_CONFIG_INT(SvVoteKickBantime, sv_vote_kick_bantime, 5, 0, 1440, CFGFLAG_SE
 
 MACRO_CONFIG_INT(DbgFocus, dbg_focus, 0, 0, 1, CFGFLAG_CLIENT, "")
 MACRO_CONFIG_INT(DbgTuning, dbg_tuning, 0, 0, 1, CFGFLAG_CLIENT, "")
-
 MACRO_CONFIG_INT(SvMapUpdateRate, sv_mapupdaterate, 5, 1, 100, CFGFLAG_SERVER, "(Tw32) real id <-> vanilla id players map update rate")
 #endif

@@ -1,5 +1,11 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Copyright � 2013 Neox.                                                                                                */
+/* If you are missing that file, acquire a complete release at https://www.teeworlds.com/forum/viewtopic.php?pid=106707  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include <engine/shared/config.h>
 #include <game/mapitems.h>
 
@@ -8,7 +14,13 @@
 #include "entities/pickup.h"
 #include "gamecontroller.h"
 #include "gamecontext.h"
-
+#include "entities/flag.h"
+#include "entities/wizardhelper.h"
+#include "entities/heartbox.h"
+#include "entities/soldierdec.h"
+#include "entities/healerdec.h"
+#include "entities/wtf.h"
+#include "entities/ninjadec.h"
 
 IGameController::IGameController(class CGameContext *pGameServer)
 {
@@ -156,11 +168,33 @@ bool IGameController::OnEntity(int Index, vec2 Pos)
 		Type = POWERUP_WEAPON;
 		SubType = WEAPON_RIFLE;
 	}
+	else if(Index == ENTITY_WEAPON_HAMMER)
+	{
+		Type = POWERUP_WEAPON;
+		SubType = WEAPON_HAMMER;
+	}
+	else if(Index == ENTITY_WEAPON_GUN)
+	{
+		Type = POWERUP_WEAPON;
+		SubType = WEAPON_GUN;
+	}
 	else if(Index == ENTITY_POWERUP_NINJA && g_Config.m_SvPowerups)
 	{
 		Type = POWERUP_NINJA;
 		SubType = WEAPON_NINJA;
 	}
+	else if(Index == ENTITY_HEARTBOX)
+	{
+        new CHeartBox(&GameServer()->m_World, Pos);
+	}
+	else if(Index == ENTITY_WTF)
+	{
+	new CWTF(&GameServer()->m_World, Pos);
+	}
+	/*else if(Index == ENTITY_HELP)
+	{
+	new C(&GameServer()->m_World, Pos);
+	}*/
 
 	if(Type != -1)
 	{
@@ -215,8 +249,15 @@ void IGameController::StartRound()
 	m_SuddenDeath = 0;
 	m_GameOverTick = -1;
 	GameServer()->m_World.m_Paused = false;
-	m_aTeamscore[TEAM_RED] = 0;
-	m_aTeamscore[TEAM_BLUE] = 0;
+	for(int i = 0; i < 2; i++)
+    {
+        if(GameServer()->m_apFlags[i])
+        {
+            GameServer()->m_apFlags[i]->IncreaseHealth(g_Config.m_FlagHealth);
+            m_aTeamscore[i] = GameServer()->m_apFlags[i]->GetHealth();
+        }
+    }
+
 	m_ForceBalanced = false;
 	Server()->DemoRecorder_HandleAutoStart();
 	char aBuf[256];
@@ -361,12 +402,38 @@ int IGameController::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *
 
 void IGameController::OnCharacterSpawn(class CCharacter *pChr)
 {
-	// default health
-	pChr->IncreaseHealth(10);
+	pChr->IncreaseHealth(pChr->GetPlayer()->SpawnHP());
+
+	pChr->IncreaseArmor(pChr->GetPlayer()->SpawnAP());
 
 	// give default weapons
-	pChr->GiveWeapon(WEAPON_HAMMER, -1);
-	pChr->GiveWeapon(WEAPON_GUN, 10);
+	if(pChr->GetPlayer()->GetClass() == CLASS_SOLDIER)
+    {
+        pChr->GiveWeapon(WEAPON_SHOTGUN, 10);
+        pChr->GiveWeapon(WEAPON_GRENADE, 10);
+        pChr->GiveWeapon(WEAPON_RIFLE, 10);
+        pChr->GiveWeapon(WEAPON_HAMMER, -1);
+        pChr->GiveWeapon(WEAPON_GUN, 10);
+    }
+    else if(pChr->GetPlayer()->GetClass() != CLASS_NONE && pChr->GetPlayer()->GetClass() != CLASS_NINJA)
+    {
+        pChr->GiveWeapon(WEAPON_HAMMER, -1);
+        pChr->GiveWeapon(WEAPON_GUN, 10);
+    }
+	else if(pChr->GetPlayer()->GetClass() == CLASS_NINJA)
+	{
+	pChr->GiveWeapon(WEAPON_NINJA, -1);
+	pChr->GiveNinja();
+	}
+	switch(pChr->GetPlayer()->GetClass())
+	{
+	    case CLASS_HEALER: new CHealerDec(&GameServer()->m_World, pChr->GetPlayer()->GetCID()); break;
+	    case CLASS_SOLDIER: new CSoldierDec(&GameServer()->m_World, pChr->GetPlayer()->GetCID()); break;
+	    case CLASS_WIZARD: new CWizardHelper(&GameServer()->m_World, pChr->GetPlayer()->GetCID()); break;
+		case CLASS_NINJA: new CNinjaDec(&GameServer()->m_World, pChr->GetPlayer()->GetCID()); break;
+	}
+
+	pChr->GetPlayer()->SpecialAmmoMax();
 }
 
 void IGameController::DoWarmup(int Seconds)
