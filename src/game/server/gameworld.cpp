@@ -320,7 +320,7 @@ CFlag *CGameWorld::ClosestFlag(vec2 Pos, float Radius, int NotThisTeam)
 	for(; p; p = (CFlag *)p->TypeNext())
  	{
  	    if(p->m_Team == NotThisTeam)
-void CGameWorld::UpdatePlayerMaps()
+/*void CGameWorld::UpdatePlayerMaps()
 {
 	if (Server()->Tick() % g_Config.m_SvMapUpdateRate != 0) return;
 
@@ -337,7 +337,7 @@ void CGameWorld::UpdatePlayerMaps()
 			dist[j].first = 1e10;
 			if (!Server()->ClientIngame(j))
 				continue;
-			/*CCharacter* ch = GameServer()->m_apPlayers[j]->GetCharacter();
+			CCharacter* ch = GameServer()->m_apPlayers[j]->GetCharacter();
 			if (!ch)
 				continue;
 			// copypasted chunk from character.cpp Snap() follows
@@ -351,7 +351,7 @@ void CGameWorld::UpdatePlayerMaps()
 					!GameServer()->m_apPlayers[SnappingClient]->m_ShowOthers
                                 	)
 				)
-                        ) continue;*/
+                        ) continue;
 
 			dist[j].first = distance(GameServer()->m_apPlayers[i]->m_ViewPos, GameServer()->m_apPlayers[j]->m_ViewPos);
 		}
@@ -409,5 +409,5 @@ void CGameWorld::UpdatePlayerMaps()
 		}
 	}
 
-	return pClosest;
+	return pClosest;*/
 }
