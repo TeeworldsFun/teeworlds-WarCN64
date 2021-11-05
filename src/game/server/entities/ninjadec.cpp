@@ -52,6 +52,5 @@ void CNinjaDec::Snap(int SnappingClient)
 
 	pObj->m_X = (int)m_Pos.x;
 	pObj->m_Y = (int)m_Pos.y;
-	pObj->m_Type = POWERUP_NINJA;
-    pObj->m_Subtype = WEAPON_NINJA;
+	pObj->m_Type = WEAPON_NINJA;
 }

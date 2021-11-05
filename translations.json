@@ -2,18 +2,205 @@
   "translated strings": [
     {
       "context": "english",
-      "or": "",
-      "tr": ""
+      "or": "医疗兵：可以放置回血区，自己每秒回一滴血/甲，红队回血区显示为榴弹炮，蓝队为等离子体(激光点)，头顶有激光枪作为标志",
+      "tr": "Healer: Can put heal circle, Recover 1 blood/armor per second, Red team healcircle display grenade, blue team is plasma, There's a laser gun on his head"
     },
     {
       "context": "english",
-      "or": "",
-      "tr": ""
+      "or": "玩的开心！",
+      "tr": "Have fun!"
     },
     {
       "context": "english",
-      "or": "",
-      "tr": ""
+      "or": "Mod作者Neox",
+      "tr": "Mod by Neox76"
+    },
+    {
+      "context": "english",
+      "or": "士兵：脚底有一把榴弹炮做装饰证明他的角色是士兵，奔跑速度快，手枪按住自动发射，无限子弹而且发射速度更快",
+      "tr": "Solider: "
+    },
+    {
+      "context": "english",
+      "or": "忍者：..杀...杀..杀.杀！！！！！！！！",
+      "tr": "Ninja: ..kill...kill..kkkill...!"
+    },
+    {
+      "context": "english",
+      "or": "巫师：拥有一个助手（用光点显示），可以发射火球，无限跳",
+      "tr": "Wizard:"
+    },
+    {
+      "context": "english",
+      "or": "/w - 成为医疗兵 /s - 成为士兵 /w - 成为巫师 /n - 成为忍者",
+      "tr": "/w - be healer /s - be solider /w - be wizard /n - be ninja"
+    },
+    {
+      "context": "english",
+      "or": "Mod原作者Neox",
+      "tr": "Origin mod by Neox76"
+    },
+    {
+      "context": "english",
+      "or": "此版本 by FlowerFell-Sans && CHNFun 团队",
+      "tr": "This version by FlowerFell-Sans and CHNFun team"
+    },
+    {
+      "context": "english",
+      "or": "你早就是医疗兵了!",
+      "tr": "You are already a healer!"
+    },
+    {
+      "context": "english",
+      "or": "你现在是医疗兵了!",
+      "tr": "You are now a healer!"
+    },
+    {
+      "context": "english",
+      "or": "你早就是士兵了!",
+      "tr": "You are already a soldier!"
+    },
+    },
+    {
+      "context": "english",
+      "or": "士兵：脚底有一把榴弹炮做装饰证明他的角色是士兵，奔跑速度快，手枪按住自动发射，无限子弹而且发射速度更快",
+      "tr": "Solider: "
+    },
+    {
+      "context": "english",
+      "or": "忍者：..杀...杀..杀.杀！！！！！！！！",
+      "tr": "Ninja: ..kill...kill..kkkill...!"
+    },
+    {
+      "context": "english",
+      "or": "巫师：拥有一个助手（用光点显示），可以发射火球，无限跳",
+      "tr": "Wizard:"
+    },
+    {
+      "context": "english",
+      "or": "/w - 成为医疗兵 /s - 成为士兵 /w - 成为巫师 /n - 成为忍者",
+      "tr": "/w - be healer /s - be solider /w - be wizard /n - be ninja"
+    },
+    {
+      "context": "english",
+      "or": "Mod原作者Neox",
+      "tr": "Origin mod by Neox76"
+    },
+    {
+      "context": "english",
+      "or": "此版本 by FlowerFell-Sans && CHNFun 团队",
+      "tr": "This version by FlowerFell-Sans and CHNFun team"
+    },
+    {
+      "context": "english",
+      "or": "你早就是医疗兵了!",
+      "tr": "You are already a healer!"
+    },
+    {
+      "context": "english",
+      "or": "你现在是医疗兵了!",
+      "tr": "You are now a healer!"
+    },
+    {
+      "context": "english",
+      "or": "你早就是士兵了!",
+      "tr": "You are already a soldier!"
+    },
+    },
+    {
+      "context": "english",
+      "or": "巫师：拥有一个助手（用光点显示），可以发射火球，无限跳",
+      "tr": "Wizard:"
+    },
+    {
+      "context": "english",
+      "or": "/w - 成为医疗兵 /s - 成为士兵 /w - 成为巫师 /n - 成为忍者",
+      "tr": "/w - be healer /s - be solider /w - be wizard /n - be ninja"
+    },
+    {
+      "context": "english",
+      "or": "Mod原作者Neox",
+      "tr": "Origin mod by Neox76"
+    },
+    {
+      "context": "english",
+      "or": "此版本 by FlowerFell-Sans && CHNFun 团队",
+      "tr": "This version by FlowerFell-Sans and CHNFun team"
+    },
+    {
+      "context": "english",
+      "or": "你早就是医疗兵了!",
+      "tr": "You are already a healer!"
+    },
+    {
+      "context": "english",
+      "or": "你现在是医疗兵了!",
+      "tr": "You are now a healer!"
+    },
+    {
+      "context": "english",
+      "or": "你早就是士兵了!",
+      "tr": "You are already a soldier!"
+    },
+    {
+      "context": "english",
+      "or": "你现在是士兵了!",
+      "tr": "You are now a soldier!"
+    },
+    {
+      "context": "english",
+      "or": "你早就是忍者了!",
+      "tr": "You are already a ninja!"
+    },
+    {
+      "context": "english",
+      "or": "你现在是忍者了!",
+      "tr": "You are now a ninja!"
+    },
+    {
+      "context": "english",
+      "or": "你早就是巫师了!",
+      "tr": "You are already a wizard!"
+    },
+    {
+      "context": "english",
+      "or": "你现在是巫师了!",
+      "tr": "You are now a wizard!"-
+    },
+    {
+      "context": "english",
+      "or": "/info - 服务器介绍",
+      "tr": "/info - Server info"
+    },
+    {
+      "context": "english",
+      "or": "/n - 成为忍者",
+      "tr": "/n - be ninja"
+    },
+    {
+      "context": "english",
+      "or": "/w - 成为巫师",
+      "tr": "/w - be wizard"
+    },
+    {
+      "context": "english",
+      "or": "/h - 成为医疗兵",
+      "tr": "/h - be healer"
+    },
+    {
+      "context": "english",
+      "or": "/s - 成为士兵",
+      "tr": "/s - be solider"
+    },
+    {
+      "context": "english",
+      "or": "(AutoKick) 禁止说脏话!",
+      "tr": "(AutoKick) Insults are not allowed"
+    },
+    {
+      "context": "english",
+      "or": "血量",
+      "tr": "health"
     },
     {
       "context": "english",
